@@ -1,0 +1,7 @@
+name: starmesh_invite
+description: Starmesh invite encode/decode (QR + 10-char fingerprint). No DNS.
+version: 2.0.0
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+dependencies:
+  crypto: ^3.0.3
