@@ -3,20 +3,66 @@ package hub
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"sync"
+	"time"
 )
 
 // LocalAPI is a loopback control plane for the Flutter app / operator UI.
-// It is not a public relay and must stay on 127.0.0.1.
+// It is not a public relay and must stay on 127.0.0.1. The same type backs
+// both a hub process (`hub --api`) and a spoke process (`spoke --api`), so
+// the Flutter app can drive a phone (spoke) or a station (hub) identically.
 type LocalAPI struct {
-	mu     sync.Mutex
-	Status func() map[string]any
-	Invite func() string
-	QR     func() string
-	Become func() (string, error)
-	Stop   func()
-	Send   func(to, text string) error
-	Banner func() string
+	mu        sync.Mutex
+	Status    func() map[string]any
+	Invite    func() string
+	QR        func() string
+	Become    func() (string, error)
+	Stop      func()
+	Send      func(to, text string) error
+	AddInvite func(blob string)
+	Banner    func() string
+
+	msgs []APIMessage
+	seq  int
+}
+
+// APIMessage is one chat line exposed to the local UI via /v1/messages.
+type APIMessage struct {
+	Seq  int    `json:"seq"`
+	From string `json:"from"`
+	Name string `json:"name"`
+	Text string `json:"text"`
+	Mine bool   `json:"mine"`
+	Ts   int64  `json:"ts"`
+}
+
+const maxInbox = 1000
+
+// Push records a chat message into the local inbox for the UI to poll.
+func (a *LocalAPI) Push(from, name, text string, mine bool) {
+	a.mu.Lock()
+	a.seq++
+	a.msgs = append(a.msgs, APIMessage{
+		Seq: a.seq, From: from, Name: name, Text: text, Mine: mine,
+		Ts: time.Now().UnixMilli(),
+	})
+	if len(a.msgs) > maxInbox {
+		a.msgs = a.msgs[len(a.msgs)-maxInbox:]
+	}
+	a.mu.Unlock()
+}
+
+func (a *LocalAPI) messagesAfter(after int) ([]APIMessage, int) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	out := make([]APIMessage, 0, len(a.msgs))
+	for _, m := range a.msgs {
+		if m.Seq > after {
+			out = append(out, m)
+		}
+	}
+	return out, a.seq
 }
 
 func (a *LocalAPI) Handler() http.Handler {
@@ -36,6 +82,25 @@ func (a *LocalAPI) Handler() http.Handler {
 		writeJSON(w, out)
 	})
 	mux.HandleFunc("/v1/invite", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			var req struct {
+				Invite string `json:"invite"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, err.Error(), 400)
+				return
+			}
+			a.mu.Lock()
+			add := a.AddInvite
+			a.mu.Unlock()
+			if add == nil {
+				http.Error(w, "unavailable", 503)
+				return
+			}
+			add(req.Invite)
+			writeJSON(w, map[string]string{"ok": "1"})
+			return
+		}
 		a.mu.Lock()
 		fn := a.Invite
 		qr := a.QR
@@ -102,12 +167,47 @@ func (a *LocalAPI) Handler() http.Handler {
 			return
 		}
 		if err := fn(req.To, req.Text); err != nil {
-			writeJSON(w, map[string]string{"error": err.Error()})
+			a.Push("me", "me", req.Text, true)
+			writeJSON(w, map[string]string{"error": err.Error(), "queued": "1"})
 			return
 		}
+		a.Push("me", "me", req.Text, true)
 		writeJSON(w, map[string]string{"ok": "1"})
 	})
-	return mux
+	// Long-poll inbox: returns as soon as a message with Seq > after exists,
+	// or after a bounded wait so clients can re-poll cheaply.
+	mux.HandleFunc("/v1/messages", func(w http.ResponseWriter, r *http.Request) {
+		after, _ := strconv.Atoi(r.URL.Query().Get("after"))
+		deadline := time.Now().Add(25 * time.Second)
+		for {
+			msgs, latest := a.messagesAfter(after)
+			if len(msgs) > 0 || time.Now().After(deadline) {
+				writeJSON(w, map[string]any{"messages": msgs, "seq": latest})
+				return
+			}
+			select {
+			case <-r.Context().Done():
+				return
+			case <-time.After(300 * time.Millisecond):
+			}
+		}
+	})
+	return withCORS(mux)
+}
+
+// withCORS allows the Flutter web build (served from another loopback port)
+// to reach this loopback-only control plane during development.
+func withCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

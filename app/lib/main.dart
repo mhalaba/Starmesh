@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:starmesh/app_state.dart';
 import 'package:starmesh/screens/chat.dart';
 import 'package:starmesh/screens/network.dart';
+import 'package:starmesh/theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,16 +19,7 @@ class StarmeshApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Starmesh',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF7AD7FF),
-            secondary: Color(0xFFE8C547),
-            surface: Color(0xFF10141C),
-          ),
-          scaffoldBackgroundColor: const Color(0xFF0B0E14),
-          useMaterial3: true,
-        ),
+        theme: starmeshTheme(),
         home: const Shell(),
       ),
     );
@@ -50,23 +42,34 @@ class _ShellState extends State<Shell> {
       listenable: state,
       builder: (context, _) {
         return Scaffold(
-          body: Column(
-            children: [
-              _Banner(text: state.banner),
-              Expanded(
-                child: IndexedStack(
-                  index: _i,
-                  children: const [ChatScreen(), NetworkScreen()],
+          body: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                _Header(state: state),
+                Expanded(
+                  child: IndexedStack(
+                    index: _i,
+                    children: const [ChatScreen(), NetworkScreen()],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _i,
             onDestinationSelected: (v) => setState(() => _i = v),
             destinations: const [
-              NavigationDestination(icon: Icon(Icons.forum_outlined), label: 'Chat'),
-              NavigationDestination(icon: Icon(Icons.hub_outlined), label: 'Network'),
+              NavigationDestination(
+                icon: Icon(Icons.forum_outlined),
+                selectedIcon: Icon(Icons.forum),
+                label: 'Chat',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.hub_outlined),
+                selectedIcon: Icon(Icons.hub),
+                label: 'Network',
+              ),
             ],
           ),
         );
@@ -75,22 +78,109 @@ class _ShellState extends State<Shell> {
   }
 }
 
-class _Banner extends StatelessWidget {
-  const _Banner({required this.text});
-  final String text;
+class _Header extends StatelessWidget {
+  const _Header({required this.state});
+  final AppState state;
+
   @override
   Widget build(BuildContext context) {
-    final ok = !text.toLowerCase().contains('no hub');
+    final (color, icon, label) = _linkStyle(state.link);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 48, 16, 12),
-      color: ok ? const Color(0xFF123524) : const Color(0xFF3A1D12),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: ok ? const Color(0xFFB6F3C8) : const Color(0xFFFFD0B5),
-          fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [kSurface, kBackground],
         ),
+        border: Border(bottom: BorderSide(color: color.withValues(alpha: 0.4))),
+      ),
+      child: Row(
+        children: [
+          const _Logo(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Starmesh',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 2),
+                Text(
+                  state.banner,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
+          ),
+          _StatusPill(color: color, icon: icon, label: label),
+        ],
+      ),
+    );
+  }
+
+  (Color, IconData, String) _linkStyle(LinkState s) {
+    switch (s) {
+      case LinkState.hub:
+        return (kOk, Icons.hub, 'Hub');
+      case LinkState.seed:
+        return (kPrimary, Icons.cloud_done, 'Seed');
+      case LinkState.queued:
+        return (kWarn, Icons.schedule, 'Queued');
+      case LinkState.offline:
+        return (kDanger, Icons.cloud_off, 'Offline');
+    }
+  }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(colors: [kPrimary, Color(0xFF3E7CB1)]),
+      ),
+      child: const Icon(Icons.travel_explore, color: Color(0xFF06121A), size: 22),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill(
+      {required this.color, required this.icon, required this.label});
+  final Color color;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+        ],
       ),
     );
   }

@@ -190,6 +190,7 @@ func runHub(home, name string, port int, dev, seed bool, c hub.Cap, peers []stri
 			Invite: func() string { return blob },
 			QR:     func() string { return blob },
 			Banner: func() string { return fmt.Sprintf("Hub: %s (IPv6 Starlink)", name) },
+			Become: func() (string, error) { return "Already running as a hub: " + name, nil },
 			Stop:   func() { srv.Stop(); stop() },
 		}
 		go func() {
@@ -214,6 +215,7 @@ func cmdSpoke(args []string) error {
 	community := fs.String("community", "", "signed community-hubs.json")
 	seed := fs.String("seed", "", "cloud-seed invite (lowest priority)")
 	mdns := fs.Bool("mdns", false, "browse LAN beacons on this Starlink LAN")
+	apiAddr := fs.String("api", "127.0.0.1:7780", "loopback JSON API for the Flutter UI (empty to disable)")
 	home := homeFlag(fs)
 	_ = fs.Parse(args)
 
@@ -250,6 +252,7 @@ func cmdSpoke(args []string) error {
 		}
 	}
 	var banner string
+	var localAPI *hub.LocalAPI
 	sp := hub.NewSpoke(id, hub.SpokeConfig{
 		Name:       *name,
 		Invites:    invites,
@@ -261,6 +264,9 @@ func cmdSpoke(args []string) error {
 		Queue:      q,
 		OnMessage: func(from, n, text string) {
 			fmt.Printf("\r<%s %s> %s\n> ", n, from, text)
+			if localAPI != nil {
+				localAPI.Push(from, n, text, false)
+			}
 		},
 		OnStatus: func(s string) {
 			banner = s
@@ -279,44 +285,91 @@ func cmdSpoke(args []string) error {
 	}
 	go func() { _ = sp.Run(ctx) }()
 
+	if *apiAddr != "" {
+		localAPI = &hub.LocalAPI{
+			Status: func() map[string]any {
+				m := map[string]any{"role": "spoke"}
+				var hubs []map[string]any
+				if h := sp.ConnectedHub(); h != nil {
+					hubs = append(hubs, map[string]any{
+						"name":        h.Name,
+						"role":        "hub",
+						"fingerprint": hub.Fingerprint(h.Ed25519),
+						"cloud_seed":  h.CloudSeed,
+						"proto":       "quic",
+					})
+				}
+				m["hubs"] = hubs
+				peers := []map[string]any{}
+				for _, p := range sp.Peers() {
+					peers = append(peers, map[string]any{
+						"name":        p.Name,
+						"fingerprint": hub.Fingerprint(p.Ed),
+					})
+				}
+				m["peers"] = peers
+				return m
+			},
+			Send:      func(to, text string) error { return sp.SendToName(to, text) },
+			AddInvite: func(blob string) { sp.AddInvite(blob) },
+			Become: func() (string, error) {
+				c := hub.Probe(hub.ProbeOpts{Port: invite.DefaultPort})
+				if !c.CanBeHub {
+					return c.Reason, fmt.Errorf("not hub-capable")
+				}
+				return "This device can host a hub. Run: starmesh hub", nil
+			},
+			Banner: func() string { return banner },
+		}
+		go func() {
+			slog.Info("local api", "addr", *apiAddr)
+			_ = http.ListenAndServe(*apiAddr, localAPI.Handler())
+		}()
+	}
+
 	fmt.Fprintf(os.Stderr, "spoke %s fp=%s\n", *name, id.Fingerprint())
 	fmt.Fprintln(os.Stderr, "type messages; /peers  /to NAME  /status  /invite BLOB")
-	in := bufio.NewScanner(os.Stdin)
-	fmt.Print("> ")
-	peer := *to
-	for in.Scan() {
-		line := strings.TrimSpace(in.Text())
-		switch {
-		case line == "":
-		case line == "/peers":
-			for _, p := range sp.Peers() {
-				fmt.Printf("  %s  %s\n", p.Name, hub.Fingerprint(p.Ed))
-			}
-		case line == "/status":
-			fmt.Println(banner)
-			if h := sp.ConnectedHub(); h != nil {
-				fmt.Println("hub", h.Name, hub.Fingerprint(h.Ed25519))
-			} else {
-				fmt.Println("No hub — queued")
-			}
-		case strings.HasPrefix(line, "/to "):
-			peer = strings.TrimSpace(strings.TrimPrefix(line, "/to "))
-			fmt.Println("to", peer)
-		case strings.HasPrefix(line, "/invite "):
-			sp.AddInvite(strings.TrimSpace(strings.TrimPrefix(line, "/invite ")))
-			fmt.Println("invite queued for next dial")
-		default:
-			if peer == "" {
-				if err := sp.SendToName("", line); err != nil {
+	go func() {
+		in := bufio.NewScanner(os.Stdin)
+		fmt.Print("> ")
+		peer := *to
+		for in.Scan() {
+			line := strings.TrimSpace(in.Text())
+			switch {
+			case line == "":
+			case line == "/peers":
+				for _, p := range sp.Peers() {
+					fmt.Printf("  %s  %s\n", p.Name, hub.Fingerprint(p.Ed))
+				}
+			case line == "/status":
+				fmt.Println(banner)
+				if h := sp.ConnectedHub(); h != nil {
+					fmt.Println("hub", h.Name, hub.Fingerprint(h.Ed25519))
+				} else {
+					fmt.Println("No hub — queued")
+				}
+			case strings.HasPrefix(line, "/to "):
+				peer = strings.TrimSpace(strings.TrimPrefix(line, "/to "))
+				fmt.Println("to", peer)
+			case strings.HasPrefix(line, "/invite "):
+				sp.AddInvite(strings.TrimSpace(strings.TrimPrefix(line, "/invite ")))
+				fmt.Println("invite queued for next dial")
+			default:
+				if peer == "" {
+					if err := sp.SendToName("", line); err != nil {
+						fmt.Fprintln(os.Stderr, err)
+					}
+				} else if err := sp.SendToName(peer, line); err != nil {
 					fmt.Fprintln(os.Stderr, err)
 				}
-			} else if err := sp.SendToName(peer, line); err != nil {
-				fmt.Fprintln(os.Stderr, err)
 			}
+			fmt.Print("> ")
 		}
-		fmt.Print("> ")
-	}
-	return in.Err()
+	}()
+	// Stay alive for the local API and signals even when stdin is closed
+	// (the Flutter app drives a spoke daemon with no attached terminal).
+	<-ctx.Done()
+	return nil
 }
 
 func cmdInvite(args []string) error {
