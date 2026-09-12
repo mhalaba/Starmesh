@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:starmesh_invite/invite.dart';
+
+/// Link state derived from the local daemon status, used to colour the header.
+enum LinkState { offline, queued, hub, seed }
 
 class HubRow {
   HubRow({
@@ -14,6 +20,9 @@ class HubRow {
     this.ipv4 = '',
     this.self = false,
     this.fingerprint = '',
+    this.proto = '',
+    this.cloudSeed = false,
+    this.spokes = 0,
   });
   final String name;
   final String role;
@@ -22,44 +31,114 @@ class HubRow {
   final String ipv4;
   final bool self;
   final String fingerprint;
+  final String proto;
+  final bool cloudSeed;
+  final int spokes;
+}
+
+class PeerRow {
+  PeerRow(this.name, this.fingerprint);
+  final String name;
+  final String fingerprint;
+
+  String get label => name.isEmpty ? fingerprint : name;
 }
 
 class ChatLine {
-  ChatLine(this.from, this.text, {this.mine = false});
+  ChatLine(this.from, this.text, {this.mine = false, DateTime? ts})
+      : ts = ts ?? DateTime.now();
   final String from;
   final String text;
   final bool mine;
+  final DateTime ts;
 }
 
 class AppState extends ChangeNotifier {
   AppState() {
+    _loadCommunity();
     _tick = Timer.periodic(const Duration(seconds: 2), (_) => refresh());
     refresh();
+    _pumpMessages();
   }
 
   final api = Uri.parse('http://127.0.0.1:7780');
   Timer? _tick;
+  bool _disposed = false;
+  int _lastSeq = 0;
 
+  bool daemonUp = false;
   String banner = 'No hub — queued';
   String role = 'spoke';
   String inviteBlob = '';
   String shortCode = '';
   String refuse = '';
   List<HubRow> hubs = [];
+  List<PeerRow> peers = [];
+  List<HubRow> communitySeeds = [];
   List<ChatLine> lines = [];
-  String draft = '';
+
+  LinkState get link {
+    if (!daemonUp) return LinkState.offline;
+    if (hubs.isEmpty) return LinkState.queued;
+    return hubs.first.cloudSeed ? LinkState.seed : LinkState.hub;
+  }
 
   @override
   void dispose() {
+    _disposed = true;
     _tick?.cancel();
     super.dispose();
   }
 
+  /// Load the bundled, signed community list so the app can show the
+  /// last-resort seed(s) even before the local daemon has dialed anything.
+  /// The daemon is what actually dials them (it auto-loads the same list).
+  Future<void> _loadCommunity() async {
+    try {
+      final raw = await rootBundle.loadString('assets/community-hubs.json');
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      final list = (j['hubs'] as List?) ?? [];
+      final rows = <HubRow>[];
+      for (final e in list) {
+        final m = e as Map<String, dynamic>;
+        final edHex = '${m['ed25519'] ?? ''}';
+        if (edHex.length != 64) continue;
+        final ed = _hexBytes(edHex);
+        String short = '';
+        try {
+          short = Invite(pubKey: ed, cloudSeed: true).shortDisplay();
+        } catch (_) {}
+        rows.add(HubRow(
+          name: '${m['name'] ?? ''}',
+          role: 'seed',
+          ipv6: '${m['ipv6'] ?? ''}',
+          ipv4: '${m['ipv4'] ?? ''}',
+          fingerprint: short,
+          proto: 'quic',
+          cloudSeed: true,
+        ));
+      }
+      communitySeeds = rows;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Uint8List _hexBytes(String h) {
+    final out = Uint8List(h.length ~/ 2);
+    for (var i = 0; i < out.length; i++) {
+      out[i] = int.parse(h.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+    return out;
+  }
+
   Future<void> refresh() async {
     try {
-      final r = await http.get(api.replace(path: '/v1/status')).timeout(const Duration(seconds: 2));
+      final r = await http
+          .get(api.replace(path: '/v1/status'))
+          .timeout(const Duration(seconds: 2));
       if (r.statusCode != 200) return;
       final j = jsonDecode(r.body) as Map<String, dynamic>;
+      daemonUp = true;
       banner = (j['banner'] as String?) ?? banner;
       role = (j['role'] as String?) ?? role;
       inviteBlob = (j['invite'] as String?) ?? inviteBlob;
@@ -76,16 +155,67 @@ class AppState extends ChangeNotifier {
             ipv4: '${m['ipv4'] ?? ''}',
             self: m['self'] == true,
             fingerprint: '${m['fingerprint'] ?? ''}',
+            proto: '${m['proto'] ?? ''}',
+            cloudSeed: m['cloud_seed'] == true,
+            spokes: (m['spokes'] as num?)?.toInt() ?? 0,
           );
+        }).toList();
+      }
+      final pl = j['peers'];
+      if (pl is List) {
+        peers = pl.map((e) {
+          final m = e as Map<String, dynamic>;
+          return PeerRow('${m['name'] ?? ''}', '${m['fingerprint'] ?? ''}');
         }).toList();
       }
       refuse = '';
       notifyListeners();
     } catch (_) {
-      // Local Go daemon not running — UI still works; actions will explain.
+      daemonUp = false;
       if (hubs.isEmpty && inviteBlob.isEmpty) {
-        banner = 'No hub — queued';
-        notifyListeners();
+        banner = 'Local daemon offline — start starmesh spoke';
+      }
+      notifyListeners();
+    }
+  }
+
+  /// Long-poll the daemon inbox so incoming (and echoed outgoing) chat lines
+  /// appear without the user refreshing.
+  Future<void> _pumpMessages() async {
+    while (!_disposed) {
+      try {
+        final r = await http
+            .get(api.replace(
+              path: '/v1/messages',
+              queryParameters: {'after': '$_lastSeq'},
+            ))
+            .timeout(const Duration(seconds: 30));
+        if (r.statusCode != 200) {
+          await Future.delayed(const Duration(seconds: 1));
+          continue;
+        }
+        daemonUp = true;
+        final j = jsonDecode(r.body) as Map<String, dynamic>;
+        final msgs = (j['messages'] as List?) ?? [];
+        var changed = false;
+        for (final m in msgs) {
+          final mm = m as Map<String, dynamic>;
+          _lastSeq = (mm['seq'] as num?)?.toInt() ?? _lastSeq;
+          lines = [
+            ...lines,
+            ChatLine(
+              '${mm['name'] ?? mm['from'] ?? ''}',
+              '${mm['text'] ?? ''}',
+              mine: mm['mine'] == true,
+              ts: DateTime.fromMillisecondsSinceEpoch(
+                  (mm['ts'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch),
+            ),
+          ];
+          changed = true;
+        }
+        if (changed) notifyListeners();
+      } catch (_) {
+        await Future.delayed(const Duration(seconds: 2));
       }
     }
   }
@@ -95,8 +225,7 @@ class AppState extends ChangeNotifier {
       final r = await http.post(api.replace(path: '/v1/become-hub'));
       final j = jsonDecode(r.body) as Map<String, dynamic>;
       if (j['error'] != null) {
-        refuse = '${j['error']}';
-        if ('${j['message']}'.isNotEmpty) refuse = '${j['message']}';
+        refuse = '${j['message']}'.isNotEmpty ? '${j['message']}' : '${j['error']}';
       } else {
         refuse = '';
         await refresh();
@@ -118,31 +247,40 @@ class AppState extends ChangeNotifier {
 
   Future<void> send(String to, String text) async {
     if (text.trim().isEmpty) return;
-    lines = [...lines, ChatLine('me', text, mine: true)];
-    notifyListeners();
     try {
       await http.post(
         api.replace(path: '/v1/send'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'to': to, 'text': text}),
       );
+      // The daemon echoes the outgoing line via /v1/messages (mine=true),
+      // so we do not append optimistically here to avoid duplicates.
     } catch (_) {
-      lines = [...lines, ChatLine('system', 'queued (no hub)')];
-      banner = 'No hub — queued';
+      lines = [...lines, ChatLine('system', 'queued (daemon offline)')];
       notifyListeners();
     }
   }
 
-  void ingestInvite(String raw) {
+  /// Decode locally for instant feedback, then hand the raw blob to the daemon
+  /// so it actually dials the hub/seed.
+  Future<void> ingestInvite(String raw) async {
     try {
       final inv = decodeInvite(raw);
       inviteBlob = inv.encode();
       shortCode = inv.shortDisplay();
       banner = 'Invite ${inv.name.isEmpty ? shortCode : inv.name} — dialing';
+      notifyListeners();
     } catch (e) {
       refuse = '$e';
+      notifyListeners();
     }
-    notifyListeners();
+    try {
+      await http.post(
+        api.replace(path: '/v1/invite'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'invite': raw}),
+      );
+    } catch (_) {}
   }
 }
 

@@ -1,0 +1,26 @@
+{
+  "name": "Starmesh",
+  "install": "go mod download && go build -o dist/starmesh ./hub/cmd/starmesh && (test -x \"$HOME/flutter/bin/flutter\" || git clone --depth 1 -b stable https://github.com/flutter/flutter.git \"$HOME/flutter\") && \"$HOME/flutter/bin/flutter\" config --enable-web --no-analytics && \"$HOME/flutter/bin/flutter\" precache --web && (cd app && \"$HOME/flutter/bin/flutter\" pub get)",
+  "terminals": [
+    {
+      "name": "dev-hub",
+      "command": "go build -o dist/starmesh ./hub/cmd/starmesh && ./dist/starmesh hub --dev --name dev-hub --home /tmp/starmesh-hub --api 127.0.0.1:7780",
+      "description": "Local Starmesh dev hub (loopback IPv6, --dev). Exposes the loopback JSON API on 127.0.0.1:7780 (GET /v1/status, /v1/invite). Connect spokes with: ./dist/starmesh spoke --name alice --home /tmp/alice --invite \"$(curl -s http://127.0.0.1:7780/v1/invite | python3 -c 'import sys,json;print(json.load(sys.stdin)[\"invite\"])')\""
+    },
+    {
+      "name": "dev-ui",
+      "command": "cd app && \"$HOME/flutter/bin/flutter\" run -d web-server --web-port 8080 --web-hostname 0.0.0.0",
+      "description": "Flutter web UI dev server on :8080. Talks to the local daemon JSON API on 127.0.0.1:7780. Run `flutter analyze` in ./app to lint the UI."
+    }
+  ],
+  "ports": [
+    {
+      "name": "hub-local-api",
+      "port": 7780
+    },
+    {
+      "name": "flutter-web-ui",
+      "port": 8080
+    }
+  ]
+}

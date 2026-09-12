@@ -276,15 +276,42 @@ func (sp *Spoke) readLoop(ctx context.Context, sess *session) error {
 			var g PresenceGossip
 			_ = json.Unmarshal(m.Body, &g)
 			sp.mu.Lock()
-			for _, e := range g.Entries {
-				if edEq(e.Pub, sp.id.EdPub) {
-					continue
+			// A gossip without a Bloom filter is a full roster snapshot
+			// (the hub only compresses at >=64 entries). Treat it as
+			// authoritative so peers that have left the hub are pruned
+			// instead of lingering forever (which would let SendToName
+			// route to a dead session). Preserve any X25519 we already
+			// learned directly from a peer's chat envelope.
+			if g.Bloom == nil {
+				fresh := make(map[string]peerInfo, len(g.Entries))
+				for _, e := range g.Entries {
+					if edEq(e.Pub, sp.id.EdPub) {
+						continue
+					}
+					var x [32]byte
+					if len(e.X25519) == 32 {
+						copy(x[:], e.X25519)
+					}
+					k := mustHex(e.Pub)
+					if x == [32]byte{} {
+						if prev, ok := sp.peers[k]; ok && prev.X != [32]byte{} {
+							x = prev.X
+						}
+					}
+					fresh[k] = peerInfo{Ed: e.Pub, X: x, Name: e.Name}
 				}
-				var x [32]byte
-				if len(e.X25519) == 32 {
-					copy(x[:], e.X25519)
+				sp.peers = fresh
+			} else {
+				for _, e := range g.Entries {
+					if edEq(e.Pub, sp.id.EdPub) {
+						continue
+					}
+					var x [32]byte
+					if len(e.X25519) == 32 {
+						copy(x[:], e.X25519)
+					}
+					sp.peers[mustHex(e.Pub)] = peerInfo{Ed: e.Pub, X: x, Name: e.Name}
 				}
-				sp.peers[mustHex(e.Pub)] = peerInfo{Ed: e.Pub, X: x, Name: e.Name}
 			}
 			sp.mu.Unlock()
 		case TypeEnvelope:

@@ -1,0 +1,69 @@
+#cloud-config
+# Starmesh cloud seed — free-tier bootstrap hub.
+#
+# Tested target: Oracle Cloud "Always Free" VM.Standard.A1.Flex or E2.1.Micro
+# (Ubuntu 22.04/24.04). It hands out a public IPv4 *and* a routable IPv6,
+# forever-free, which is exactly what a last-resort Starmesh seed needs.
+# Works unchanged on any Ubuntu/Debian VPS (Hetzner, GCP e2-micro, etc.).
+#
+# Usage (Oracle console → Instance → "Show advanced options" → Cloud-init):
+#   1. Paste this file.
+#   2. Change SEED_NAME below.
+#   3. Boot. The signed invite is printed to the journal:
+#        journalctl -u 'starmesh-seed@*' --no-pager | grep -A3 starmesh1:
+#
+# Remember to also open UDP+TCP 4433 in the Oracle "Security List"
+# (ingress 0.0.0.0/0 and ::/0), because that firewall sits in front of ufw.
+
+write_files:
+  - path: /etc/starmesh/seed.env
+    permissions: "0644"
+    content: |
+      SEED_NAME=seed-fra
+
+runcmd:
+  - set -eux
+  - export DEBIAN_FRONTEND=noninteractive
+  # Always Free E2.1.Micro has ~1 GiB RAM and no swap; go build needs more.
+  - |
+    if ! swapon --show | grep -q .; then
+      fallocate -l 2G /swapfile
+      chmod 600 /swapfile
+      mkswap /swapfile
+      swapon /swapfile
+      echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    fi
+  - apt-get update
+  - apt-get install -y golang-go git ufw ca-certificates
+  # Dedicated unprivileged user + state dir.
+  - id starmesh || useradd --system --home /var/lib/starmesh --create-home --shell /usr/sbin/nologin starmesh
+  - install -d -o starmesh -g starmesh /var/lib/starmesh
+  # Build the binary from source. cloud-init runcmd has no HOME/GOPATH.
+  - export GOPATH=/var/cache/go GOPROXY=https://proxy.golang.org,direct GOCACHE=/var/cache/go-build HOME=/root
+  - mkdir -p "$GOPATH" "$GOCACHE"
+  - install -d /opt/src
+  - git clone --depth 1 https://github.com/mhalaba/Starmesh /opt/src/starmesh
+  - cd /opt/src/starmesh && go build -o /usr/local/bin/starmesh ./hub/cmd/starmesh
+  - install -m 644 /opt/src/starmesh/deploy/cloud-seed/starmesh-seed@.service /etc/systemd/system/starmesh-seed@.service
+  # Firewall: allow SSH + the Starmesh port on v4 and v6.
+  - ufw allow 22/tcp
+  - ufw allow 4433/udp
+  - ufw allow 4433/tcp
+  - ufw --force enable
+  # Oracle Ubuntu images ship an iptables REJECT before ufw; punch 4433 there too.
+  - iptables -C INPUT -p udp --dport 4433 -j ACCEPT || iptables -I INPUT -p udp --dport 4433 -j ACCEPT
+  - iptables -C INPUT -p tcp --dport 4433 -j ACCEPT || iptables -I INPUT -p tcp --dport 4433 -j ACCEPT
+  - ip6tables -C INPUT -p udp --dport 4433 -j ACCEPT || ip6tables -I INPUT -p udp --dport 4433 -j ACCEPT
+  - ip6tables -C INPUT -p tcp --dport 4433 -j ACCEPT || ip6tables -I INPUT -p tcp --dport 4433 -j ACCEPT
+  - |
+    if [ -d /etc/iptables ]; then
+      iptables-save > /etc/iptables/rules.v4
+      ip6tables-save > /etc/iptables/rules.v6 || true
+    fi
+  # Start the seed under the configured name.
+  - . /etc/starmesh/seed.env
+  - systemctl daemon-reload
+  - systemctl enable --now "starmesh-seed@${SEED_NAME}.service"
+  # Surface the invite immediately in the cloud-init log.
+  - sleep 4
+  - journalctl -u "starmesh-seed@${SEED_NAME}.service" --no-pager | tail -n 40 || true
