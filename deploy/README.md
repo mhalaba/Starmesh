@@ -136,6 +136,17 @@ Distribution / consumption:
   when `--community` is not passed, so the seed is the default fallback.
   Override with `starmesh spoke --community /path/to/community-hubs.json`.
 
+The first always-free seed is live on Oracle Cloud `ap-melbourne-1`
+(`seed-fra`, fingerprint `2V0E4-R0JEX`):
+
+- IPv4 `168.138.14.210:4433` (UDP/TCP)
+- IPv6 `2603:c023:c000:6800:0:3e74:8c2e:d37c:4433` (UDP/TCP)
+
+Launch another Always Free VM with
+[`cloud-seed/oci-launch.sh`](cloud-seed/oci-launch.sh) (VCN + IPv6 GUA +
+security list for 22 and 4433). After boot, paste the new `starmesh1:`
+invite into `gen-community.sh` and re-ship the signed list.
+
 Short codes in that file resolve without a QR.
 
 Manual signing (custom list):

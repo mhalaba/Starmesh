@@ -5,11 +5,12 @@
     {
       "name": "seed-fra",
       "ed25519": "6b5b865ef02fb2764080d37337c72e11c8a2df5c6f344069d18d44ae8705a32a",
-      "x25519": "6e844c04c8a185e8cbe1c3ec260fe689bb5dde3ebc4ab7f0fb33d00fe1e31b14",
+      "ipv6": "2603:c023:c000:6800:0:3e74:8c2e:d37c",
+      "ipv4": "168.138.14.210",
       "port": 4433,
       "last_seen": "0001-01-01T00:00:00Z",
       "cloud_seed": true
     }
   ],
-  "sig": "2843fd9bd845d36275b406f5202ddffb479c04e5388b374392953eb076ad7ed1a5a44b2eb26bc6d21addb2b37a7d82df477251e0beb1b5dab347940c864cba0b"
+  "sig": "250c63e4fca7f17440ebebd8314c36bc0c76d63ae6fa28766f4b2c91ff5bb296c0d28c44977911d83b0816b9cacb44668865a49ad46a40d3c8a1b53fc5bc5d01"
 }
