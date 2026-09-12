@@ -79,9 +79,27 @@ advertised as reachable IPv4.
 
 ## Flutter
 
+The app in `/app` is **UI only** (chat, hubs, QR). It is not the mesh.
+It talks to the local Go daemon on `http://127.0.0.1:7780`
+(`hub --api` or `spoke --api`). Hub and seed dialing stay in Go.
+
+Exact run path: [docs/flutter.md](docs/flutter.md).
+
 ```bash
-cd app && flutter create . --project-name starmesh && flutter run
+# 1. Flutter SDK: https://docs.flutter.dev/install/manual
+# 2. Go daemon
+go build -o dist/starmesh ./hub/cmd/starmesh
+./dist/starmesh hub --dev --name "OSP Nadarzyn" --api 127.0.0.1:7780
+#    or: ./dist/starmesh spoke --name alice --invite 'starmesh1:...' --api 127.0.0.1:7780
+
+# 3. UI (desktop / web / android)
+cd app && flutter pub get && flutter run
 ```
 
-The UI talks to the Go process on `127.0.0.1:7780` (hub `--api`).
-Phones remain spokes: outbound only.
+Platform folders are already in `/app`. If you have an old checkout
+without them: `cd app && flutter create . --project-name starmesh`
+(does not wipe `lib/`).
+
+Phones remain spokes: outbound only. Cloud seed
+`168.138.14.210:4433` is QUIC/TLS, **last** in the daemon dial order —
+never a Flutter “server URL” or web host.

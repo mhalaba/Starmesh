@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -422,10 +423,59 @@ func (sp *Spoke) banner(s string) {
 	}
 }
 
-func (sp *Spoke) AddInvite(s string) {
+func (sp *Spoke) AddInvite(s string) error {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return fmt.Errorf("empty invite")
+	}
+	if ip := net.ParseIP(s); ip != nil {
+		if ip.To4() != nil {
+			return fmt.Errorf("IPv4-only paste is not a Starlink hub locator; use starmesh1: or IPv6")
+		}
+		sp.mu.Lock()
+		sp.cfg.ManualIPv6 = ip.String()
+		if sp.cfg.ManualPort == 0 {
+			sp.cfg.ManualPort = invite.DefaultPort
+		}
+		sp.mu.Unlock()
+		return nil
+	}
 	sp.mu.Lock()
-	defer sp.mu.Unlock()
 	sp.cfg.Invites = append(sp.cfg.Invites, s)
+	sp.mu.Unlock()
+	return nil
+}
+
+// StatusHubs is the Network-tab list for the Flutter UI. Cloud seeds are last.
+func (sp *Spoke) StatusHubs() []map[string]any {
+	var hubs, seeds []map[string]any
+	seen := map[string]bool{}
+	add := func(name, role, fp, ipv6, ipv4 string, rtt int64, seed, self bool) {
+		if fp != "" && seen[fp] {
+			return
+		}
+		if fp != "" {
+			seen[fp] = true
+		}
+		row := map[string]any{
+			"name": name, "role": role, "fingerprint": fp,
+			"ipv6": ipv6, "ipv4": ipv4, "rtt_ms": rtt, "self": self,
+		}
+		if seed {
+			seeds = append(seeds, row)
+			return
+		}
+		hubs = append(hubs, row)
+	}
+	if h := sp.ConnectedHub(); h != nil {
+		add(h.Name, "hub", Fingerprint(h.Ed25519), "", "", 0, h.CloudSeed, false)
+	}
+	if sp.cfg.Cache != nil {
+		for _, h := range sp.cfg.Cache.List() {
+			add(h.Name, "hub", Fingerprint(h.Ed25519), h.IPv6, h.IPv4, h.LastRTTMs, h.CloudSeed, false)
+		}
+	}
+	return append(hubs, seeds...)
 }
 
 func (sp *Spoke) candidates() []CachedHub {

@@ -167,7 +167,7 @@ func TestHubStartedAfterOutageInviteIsEnough(t *testing.T) {
 
 	hub := startDevHub(t, "field-hub")
 	blob := inviteBlob(t, hub)
-	sp.AddInvite(blob)
+	_ = sp.AddInvite(blob)
 	waitHub(t, sp)
 	_ = got
 }
