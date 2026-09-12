@@ -10,6 +10,8 @@ Group=starmesh
 Environment=STARMESH_HOME=/var/lib/starmesh
 # A cloud seed is the last resort: it has no Starlink IPv6, so --force is
 # required and --cloud-seed marks it lowest priority for spokes.
+# --cloud-seed auto-detects public IPv4 (OCI IMDS / ipify) so Always Free
+# 1:1 NAT still advertises a reachable v4 address.
 ExecStart=/usr/local/bin/starmesh hub --cloud-seed --force --name "%i"
 Restart=on-failure
 RestartSec=5

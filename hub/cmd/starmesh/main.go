@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/mhalaba/Starmesh/hub"
 	"github.com/mhalaba/Starmesh/invite"
@@ -121,6 +122,7 @@ func cmdHub(args []string) error {
 	seed := fs.Bool("cloud-seed", false, "mark as last-resort VPS seed")
 	peer := fs.String("peer", "", "peer hub invite (repeat via comma)")
 	force := fs.Bool("force", false, "skip capability refuse (still will not claim CGNAT IPv4)")
+	pubv4 := fs.String("ipv4", "", "public IPv4 to advertise (1:1 NAT / Always Free). empty = auto for --cloud-seed")
 	home := homeFlag(fs)
 	api := fs.String("api", "127.0.0.1:7780", "loopback JSON API for the Flutter UI (empty to disable)")
 	_ = fs.Parse(args)
@@ -129,11 +131,67 @@ func cmdHub(args []string) error {
 		fmt.Fprintln(os.Stderr, c.Reason)
 		return fmt.Errorf("hub refused")
 	}
+	if ip := net.ParseIP(*pubv4); ip != nil && ip.To4() != nil {
+		c.PublicIPv4 = ip.To4()
+		c.ClaimIPv4 = true
+	} else if *seed && c.PublicIPv4 == nil {
+		if ip := lookupPublicIPv4(); ip != nil {
+			c.PublicIPv4 = ip
+			c.ClaimIPv4 = true
+		}
+	}
 	var peers []string
 	if *peer != "" {
 		peers = strings.Split(*peer, ",")
 	}
 	return runHub(*home, *name, *port, *dev, *seed, c, peers, *api)
+}
+
+// lookupPublicIPv4 finds the WAN IPv4 for a 1:1-NAT VPS (Oracle Always Free,
+// Fly, Hetzner). The address is not on a local interface, so Probe() will
+// otherwise refuse to advertise IPv4 even though inbound DNAT works.
+func lookupPublicIPv4() net.IP {
+	try := func(req *http.Request) net.IP {
+		cli := &http.Client{Timeout: 3 * time.Second}
+		res, err := cli.Do(req)
+		if err != nil {
+			return nil
+		}
+		defer res.Body.Close()
+		b, err := io.ReadAll(io.LimitReader(res.Body, 64))
+		if err != nil {
+			return nil
+		}
+		ip := net.ParseIP(strings.TrimSpace(string(b)))
+		if ip == nil || ip.To4() == nil || ip.IsPrivate() || ip.IsLoopback() {
+			return nil
+		}
+		return ip.To4()
+	}
+	// Oracle IMDS (no extra egress, works on a locked-down VCN).
+	if req, err := http.NewRequest(http.MethodGet, "http://169.254.169.254/opc/v2/vnics/", nil); err == nil {
+		req.Header.Set("Authorization", "Bearer Oracle")
+		cli := &http.Client{Timeout: 2 * time.Second}
+		if res, err := cli.Do(req); err == nil {
+			defer res.Body.Close()
+			var vnics []struct {
+				PublicIP string `json:"publicIp"`
+			}
+			if json.NewDecoder(io.LimitReader(res.Body, 4096)).Decode(&vnics) == nil {
+				for _, v := range vnics {
+					if ip := net.ParseIP(v.PublicIP); ip != nil && ip.To4() != nil {
+						return ip.To4()
+					}
+				}
+			}
+		}
+	}
+	if req, err := http.NewRequest(http.MethodGet, "https://api.ipify.org", nil); err == nil {
+		if ip := try(req); ip != nil {
+			return ip
+		}
+	}
+	return nil
 }
 
 func runHub(home, name string, port int, dev, seed bool, c hub.Cap, peers []string, apiAddr string) error {

@@ -24,12 +24,23 @@ write_files:
 runcmd:
   - set -eux
   - export DEBIAN_FRONTEND=noninteractive
+  # Always Free E2.1.Micro has ~1 GiB RAM and no swap; go build needs more.
+  - |
+    if ! swapon --show | grep -q .; then
+      fallocate -l 2G /swapfile
+      chmod 600 /swapfile
+      mkswap /swapfile
+      swapon /swapfile
+      echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    fi
   - apt-get update
   - apt-get install -y golang-go git ufw ca-certificates
   # Dedicated unprivileged user + state dir.
   - id starmesh || useradd --system --home /var/lib/starmesh --create-home --shell /usr/sbin/nologin starmesh
   - install -d -o starmesh -g starmesh /var/lib/starmesh
-  # Build the binary from source.
+  # Build the binary from source. cloud-init runcmd has no HOME/GOPATH.
+  - export GOPATH=/var/cache/go GOPROXY=https://proxy.golang.org,direct GOCACHE=/var/cache/go-build HOME=/root
+  - mkdir -p "$GOPATH" "$GOCACHE"
   - install -d /opt/src
   - git clone --depth 1 https://github.com/mhalaba/Starmesh /opt/src/starmesh
   - cd /opt/src/starmesh && go build -o /usr/local/bin/starmesh ./hub/cmd/starmesh
@@ -39,6 +50,16 @@ runcmd:
   - ufw allow 4433/udp
   - ufw allow 4433/tcp
   - ufw --force enable
+  # Oracle Ubuntu images ship an iptables REJECT before ufw; punch 4433 there too.
+  - iptables -C INPUT -p udp --dport 4433 -j ACCEPT || iptables -I INPUT -p udp --dport 4433 -j ACCEPT
+  - iptables -C INPUT -p tcp --dport 4433 -j ACCEPT || iptables -I INPUT -p tcp --dport 4433 -j ACCEPT
+  - ip6tables -C INPUT -p udp --dport 4433 -j ACCEPT || ip6tables -I INPUT -p udp --dport 4433 -j ACCEPT
+  - ip6tables -C INPUT -p tcp --dport 4433 -j ACCEPT || ip6tables -I INPUT -p tcp --dport 4433 -j ACCEPT
+  - |
+    if [ -d /etc/iptables ]; then
+      iptables-save > /etc/iptables/rules.v4
+      ip6tables-save > /etc/iptables/rules.v6 || true
+    fi
   # Start the seed under the configured name.
   - . /etc/starmesh/seed.env
   - systemctl daemon-reload

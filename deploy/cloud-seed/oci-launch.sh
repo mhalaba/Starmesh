@@ -59,21 +59,43 @@ if [ -z "$IGW" ] || [ "$IGW" = "null" ]; then
     --wait-for-state AVAILABLE --query 'data.id' --raw-output)
 fi
 
+# Oracle-assigned /56 GUA so the seed can publish a real IPv6 invite.
+IPV6S=$(oci network vcn get --vcn-id "$VCN" --query 'data."ipv6-cidr-blocks"[0]' --raw-output)
+if [ -z "$IPV6S" ] || [ "$IPV6S" = "null" ]; then
+  oci network vcn add-ipv6-vcn-cidr --vcn-id "$VCN" \
+    --is-oracle-gua-allocation-enabled true \
+    --wait-for-state SUCCEEDED >/dev/null
+  IPV6S=$(oci network vcn get --vcn-id "$VCN" --query 'data."ipv6-cidr-blocks"[0]' --raw-output)
+fi
+# Use the first /64 of the /56 (replace trailing ::/56 with ::/64).
+IPV64="${IPV6S%/56}/64"
+echo "IPV6_VCN=$IPV6S IPV6_SUB=$IPV64"
+
 RT=$(oci network route-table list --compartment-id "$COMPARTMENT" --vcn-id "$VCN" \
   --query 'data[0].id' --raw-output)
 oci network route-table update --rt-id "$RT" --force \
-  --route-rules "[{\"cidrBlock\":\"0.0.0.0/0\",\"networkEntityId\":\"$IGW\"}]" >/dev/null
+  --route-rules "[
+    {\"cidrBlock\":\"0.0.0.0/0\",\"networkEntityId\":\"$IGW\"},
+    {\"destination\":\"::/0\",\"destinationType\":\"CIDR_BLOCK\",\"networkEntityId\":\"$IGW\"}
+  ]" >/dev/null
 
-echo "== security list 22 + 4433 udp/tcp =="
+echo "== security list 22 + 4433 udp/tcp (v4+v6) =="
 SL=$(oci network security-list list --compartment-id "$COMPARTMENT" --vcn-id "$VCN" \
   --query 'data[0].id' --raw-output)
 oci network security-list update --security-list-id "$SL" --force \
-  --egress-security-rules '[{"destination":"0.0.0.0/0","protocol":"all","isStateless":false}]' \
+  --egress-security-rules '[
+    {"destination":"0.0.0.0/0","protocol":"all","isStateless":false},
+    {"destination":"::/0","protocol":"all","isStateless":false}
+  ]' \
   --ingress-security-rules '[
     {"source":"0.0.0.0/0","protocol":"6","isStateless":false,"tcpOptions":{"destinationPortRange":{"min":22,"max":22}}},
     {"source":"0.0.0.0/0","protocol":"6","isStateless":false,"tcpOptions":{"destinationPortRange":{"min":4433,"max":4433}}},
     {"source":"0.0.0.0/0","protocol":"17","isStateless":false,"udpOptions":{"destinationPortRange":{"min":4433,"max":4433}}},
-    {"source":"0.0.0.0/0","protocol":"1","isStateless":false,"icmpOptions":{"type":3,"code":4}}
+    {"source":"0.0.0.0/0","protocol":"1","isStateless":false,"icmpOptions":{"type":3,"code":4}},
+    {"source":"::/0","protocol":"6","isStateless":false,"tcpOptions":{"destinationPortRange":{"min":22,"max":22}}},
+    {"source":"::/0","protocol":"6","isStateless":false,"tcpOptions":{"destinationPortRange":{"min":4433,"max":4433}}},
+    {"source":"::/0","protocol":"17","isStateless":false,"udpOptions":{"destinationPortRange":{"min":4433,"max":4433}}},
+    {"source":"::/0","protocol":"58","isStateless":false}
   ]' >/dev/null
 
 echo "== subnet =="
@@ -82,8 +104,14 @@ SUB=$(oci network subnet list --compartment-id "$COMPARTMENT" --vcn-id "$VCN" \
 if [ -z "$SUB" ] || [ "$SUB" = "null" ]; then
   SUB=$(oci network subnet create --compartment-id "$COMPARTMENT" --vcn-id "$VCN" \
     --cidr-block 10.0.0.0/24 --display-name starmesh-public \
+    --ipv6-cidr-block "$IPV64" \
     --prohibit-public-ip-on-vnic false --wait-for-state AVAILABLE \
     --query 'data.id' --raw-output)
+fi
+SUB6=$(oci network subnet get --subnet-id "$SUB" --query 'data."ipv6-cidr-block"' --raw-output)
+if [ -z "$SUB6" ] || [ "$SUB6" = "null" ]; then
+  oci network subnet add-ipv6-subnet-cidr --subnet-id "$SUB" \
+    --ipv6-cidr-block "$IPV64" --wait-for-state SUCCEEDED >/dev/null
 fi
 echo "SUB=$SUB"
 
@@ -105,7 +133,13 @@ echo "INSTANCE=$INST"
 echo "== public IP =="
 VNIC=$(oci compute instance list-vnics --instance-id "$INST" --query 'data[0].id' --raw-output)
 IP=$(oci network vnic get --vnic-id "$VNIC" --query 'data."public-ip"' --raw-output)
+IPV6=$(oci network ipv6 list --vnic-id "$VNIC" --query 'data[0]."ip-address"' --raw-output 2>/dev/null || true)
+if [ -z "$IPV6" ] || [ "$IPV6" = "null" ]; then
+  IPV6=$(oci network ipv6 create --vnic-id "$VNIC" --query 'data."ip-address"' --raw-output)
+fi
 echo "PUBLIC_IP=$IP"
+echo "PUBLIC_IPV6=$IPV6"
 echo "$INST" > /tmp/starmesh-oci-instance.id
 echo "$IP" > /tmp/starmesh-oci-instance.ip
+echo "$IPV6" > /tmp/starmesh-oci-instance.ipv6
 echo "ssh -i ${SSH_KEY%.pub} ubuntu@$IP"
