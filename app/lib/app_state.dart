@@ -1,9 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:starmesh_invite/invite.dart';
+
+/// Loopback Go daemon (`starmesh hub|spoke --api`). Not a mesh or seed URL.
+/// Override with `--dart-define=STARMESH_API=http://...` (e.g. Android emulator
+/// `http://10.0.2.2:7780`). Never point this at `168.138.14.210:4433`.
+const localAPIBase = String.fromEnvironment(
+  'STARMESH_API',
+  defaultValue: 'http://127.0.0.1:7780',
+);
 
 class HubRow {
   HubRow({
@@ -32,12 +40,9 @@ class ChatLine {
 }
 
 class AppState extends ChangeNotifier {
-  AppState() {
-    _tick = Timer.periodic(const Duration(seconds: 2), (_) => refresh());
-    refresh();
-  }
+  AppState({Uri? api}) : api = api ?? Uri.parse(localAPIBase);
 
-  final api = Uri.parse('http://127.0.0.1:7780');
+  final Uri api;
   Timer? _tick;
 
   String banner = 'No hub — queued';
@@ -49,9 +54,16 @@ class AppState extends ChangeNotifier {
   List<ChatLine> lines = [];
   String draft = '';
 
+  void start() {
+    if (_tick != null) return;
+    _tick = Timer.periodic(const Duration(seconds: 2), (_) => refresh());
+    refresh();
+  }
+
   @override
   void dispose() {
     _tick?.cancel();
+    _tick = null;
     super.dispose();
   }
 
@@ -76,6 +88,17 @@ class AppState extends ChangeNotifier {
             ipv4: '${m['ipv4'] ?? ''}',
             self: m['self'] == true,
             fingerprint: '${m['fingerprint'] ?? ''}',
+          );
+        }).toList();
+      }
+      final msgs = j['messages'];
+      if (msgs is List) {
+        lines = msgs.map((e) {
+          final m = e as Map<String, dynamic>;
+          return ChatLine(
+            '${m['from'] ?? ''}',
+            '${m['text'] ?? ''}',
+            mine: m['mine'] == true,
           );
         }).toList();
       }
@@ -121,11 +144,22 @@ class AppState extends ChangeNotifier {
     lines = [...lines, ChatLine('me', text, mine: true)];
     notifyListeners();
     try {
-      await http.post(
+      final r = await http.post(
         api.replace(path: '/v1/send'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'to': to, 'text': text}),
       );
+      if (r.statusCode != 200) {
+        lines = [...lines, ChatLine('system', 'queued (no hub)')];
+        banner = 'No hub — queued';
+        notifyListeners();
+        return;
+      }
+      final j = jsonDecode(r.body);
+      if (j is Map && j['error'] != null) {
+        lines = [...lines, ChatLine('system', '${j['error']}')];
+        notifyListeners();
+      }
     } catch (_) {
       lines = [...lines, ChatLine('system', 'queued (no hub)')];
       banner = 'No hub — queued';
@@ -133,16 +167,46 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void ingestInvite(String raw) {
+  /// Decode locally for QR display, then hand the locator to the Go daemon.
+  /// Flutter never dials hubs or the cloud seed.
+  Future<void> ingestInvite(String raw) async {
+    raw = raw.trim();
+    if (raw.isEmpty) return;
     try {
       final inv = decodeInvite(raw);
       inviteBlob = inv.encode();
       shortCode = inv.shortDisplay();
-      banner = 'Invite ${inv.name.isEmpty ? shortCode : inv.name} — dialing';
+      final label = inv.name.isEmpty ? shortCode : inv.name;
+      banner = inv.cloudSeed ? 'Seed $label — last in dial order' : 'Invite $label — dialing';
+      refuse = '';
     } catch (e) {
       refuse = '$e';
     }
     notifyListeners();
+    try {
+      final r = await http.post(
+        api.replace(path: '/v1/invite'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'invite': raw}),
+      );
+      if (r.statusCode != 200) {
+        refuse = refuse.isEmpty ? 'daemon rejected invite (HTTP ${r.statusCode})' : refuse;
+        notifyListeners();
+        return;
+      }
+      final j = jsonDecode(r.body);
+      if (j is Map && j['error'] != null) {
+        refuse = '${j['error']}';
+        notifyListeners();
+        return;
+      }
+      await refresh();
+    } catch (_) {
+      if (refuse.isEmpty) {
+        refuse = 'Local daemon not running on $localAPIBase (starmesh --api)';
+      }
+      notifyListeners();
+    }
   }
 }
 

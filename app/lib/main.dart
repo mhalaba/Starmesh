@@ -8,13 +8,36 @@ void main() {
   runApp(const StarmeshApp());
 }
 
-class StarmeshApp extends StatelessWidget {
-  const StarmeshApp({super.key});
+class StarmeshApp extends StatefulWidget {
+  const StarmeshApp({super.key, this.autoStart = true});
+
+  final bool autoStart;
+
+  @override
+  State<StarmeshApp> createState() => _StarmeshAppState();
+}
+
+class _StarmeshAppState extends State<StarmeshApp> {
+  late final AppState _state = AppState();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoStart) {
+      _state.start();
+    }
+  }
+
+  @override
+  void dispose() {
+    _state.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppScope(
-      notifier: AppState(),
+      notifier: _state,
       child: MaterialApp(
         title: 'Starmesh',
         debugShowCheckedModeBanner: false,

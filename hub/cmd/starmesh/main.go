@@ -10,7 +10,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -72,6 +71,7 @@ Commands:
 
 Defaults: UDP/QUIC :4433, TCP/TLS fallback, 15s Starlink timeouts.
 Cloud seeds are last resort. Spokes never listen.
+Flutter UI talks to --api 127.0.0.1:7780 (not the seed host).
 `)
 }
 
@@ -176,27 +176,28 @@ func runHub(home, name string, port int, dev, seed bool, c hub.Cap, peers []stri
 	}
 	blob, _ := inv.Encode()
 	hub.AdvertiseLAN(ctx, blob, slog.Default())
-	if apiAddr != "" {
-		api := &hub.LocalAPI{
-			Status: func() map[string]any {
-				return map[string]any{
-					"role":   "hub",
-					"banner": fmt.Sprintf("Hub: %s (IPv6 Starlink)", name),
-					"hubs":   srv.Status(),
-					"invite": blob,
-					"short":  inv.ShortDisplay(),
-				}
-			},
-			Invite: func() string { return blob },
-			QR:     func() string { return blob },
-			Banner: func() string { return fmt.Sprintf("Hub: %s (IPv6 Starlink)", name) },
-			Stop:   func() { srv.Stop(); stop() },
-		}
-		go func() {
-			slog.Info("local api", "addr", apiAddr)
-			_ = http.ListenAndServe(apiAddr, api.Handler())
-		}()
-	}
+	hub.ServeLocalAPI(apiAddr, &hub.LocalAPI{
+		Status: func() map[string]any {
+			return map[string]any{
+				"role":   "hub",
+				"banner": fmt.Sprintf("Hub: %s (IPv6 Starlink)", name),
+				"hubs":   srv.Status(),
+				"invite": blob,
+				"short":  inv.ShortDisplay(),
+			}
+		},
+		Invite: func() string { return blob },
+		QR:     func() string { return blob },
+		Banner: func() string { return fmt.Sprintf("Hub: %s (IPv6 Starlink)", name) },
+		Become: func() (string, error) { return "already a hub", nil },
+		Stop:   func() { srv.Stop(); stop() },
+		Send: func(to, text string) error {
+			return fmt.Errorf("chat from a hub UI is not wired; run starmesh spoke --api 127.0.0.1:7780")
+		},
+		AddInvite: func(raw string) error {
+			return fmt.Errorf("hub does not dial spoke locators; paste the invite into a spoke")
+		},
+	})
 	fmt.Println("role: hub  (Ctrl-C to stop)")
 	<-ctx.Done()
 	srv.Stop()
@@ -215,6 +216,7 @@ func cmdSpoke(args []string) error {
 	seed := fs.String("seed", "", "cloud-seed invite (lowest priority)")
 	mdns := fs.Bool("mdns", false, "browse LAN beacons on this Starlink LAN")
 	home := homeFlag(fs)
+	api := fs.String("api", "127.0.0.1:7780", "loopback JSON API for the Flutter UI (empty to disable)")
 	_ = fs.Parse(args)
 
 	id, err := hub.LoadOrCreateIdentity(*home, *name)
@@ -250,6 +252,7 @@ func cmdSpoke(args []string) error {
 		}
 	}
 	var banner string
+	chat := &hub.ChatLog{}
 	sp := hub.NewSpoke(id, hub.SpokeConfig{
 		Name:       *name,
 		Invites:    invites,
@@ -260,6 +263,11 @@ func cmdSpoke(args []string) error {
 		Cache:      cache,
 		Queue:      q,
 		OnMessage: func(from, n, text string) {
+			who := n
+			if who == "" {
+				who = from
+			}
+			chat.Add(who, text, false)
 			fmt.Printf("\r<%s %s> %s\n> ", n, from, text)
 		},
 		OnStatus: func(s string) {
@@ -272,12 +280,51 @@ func cmdSpoke(args []string) error {
 	if *mdns {
 		go func() {
 			for blob := range hub.BrowseLAN(ctx, slog.Default()) {
-				sp.AddInvite(blob)
+				_ = sp.AddInvite(blob)
 				fmt.Fprintln(os.Stderr, "lan invite:", blob[:min(40, len(blob))], "...")
 			}
 		}()
 	}
 	go func() { _ = sp.Run(ctx) }()
+
+	hub.ServeLocalAPI(*api, &hub.LocalAPI{
+		Status: func() map[string]any {
+			b := banner
+			if b == "" {
+				b = "No hub — queued"
+			}
+			return map[string]any{
+				"role":   "spoke",
+				"banner": b,
+				"hubs":   sp.StatusHubs(),
+			}
+		},
+		Banner: func() string {
+			if banner == "" {
+				return "No hub — queued"
+			}
+			return banner
+		},
+		Messages: chat.Snapshot,
+		Send: func(to, text string) error {
+			chat.Add("me", text, true)
+			return sp.SendToName(to, text)
+		},
+		AddInvite: func(raw string) error {
+			return sp.AddInvite(raw)
+		},
+		Become: func() (string, error) {
+			c := hub.Probe(hub.ProbeOpts{Port: int(*port)})
+			if !c.CanBeHub {
+				msg := c.Reason
+				if msg == "" {
+					msg = hub.HubRefuse
+				}
+				return msg, fmt.Errorf("become-hub refused")
+			}
+			return "This host can be a hub. Stop this spoke and run: starmesh hub --api 127.0.0.1:7780", nil
+		},
+	})
 
 	fmt.Fprintf(os.Stderr, "spoke %s fp=%s\n", *name, id.Fingerprint())
 	fmt.Fprintln(os.Stderr, "type messages; /peers  /to NAME  /status  /invite BLOB")
@@ -303,8 +350,11 @@ func cmdSpoke(args []string) error {
 			peer = strings.TrimSpace(strings.TrimPrefix(line, "/to "))
 			fmt.Println("to", peer)
 		case strings.HasPrefix(line, "/invite "):
-			sp.AddInvite(strings.TrimSpace(strings.TrimPrefix(line, "/invite ")))
-			fmt.Println("invite queued for next dial")
+			if err := sp.AddInvite(strings.TrimSpace(strings.TrimPrefix(line, "/invite "))); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			} else {
+				fmt.Println("invite queued for next dial")
+			}
 		default:
 			if peer == "" {
 				if err := sp.SendToName("", line); err != nil {

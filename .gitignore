@@ -12,6 +12,9 @@ app/.flutter-plugins-dependencies
 app/.packages
 app/build/
 app/.pub-cache/
+app/.pub/
+app/*.iml
+app/.idea/
 invite/dart/.dart_tool/
 invite/dart/pubspec.lock
 *.swp
