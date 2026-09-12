@@ -229,12 +229,22 @@ func cmdSpoke(args []string) error {
 	cache := hub.OpenCache(hub.CachePath(*home))
 	q := hub.OpenQueue(hub.QueuePath(*home), 1000)
 	var comm []hub.CachedHub
-	if *community != "" {
-		f, err := hub.LoadCommunity(*community, nil)
+	commPath := *community
+	if commPath == "" {
+		// Default broadcasting source: auto-load the bundled community list
+		// (signed by the pinned root) from the state dir if present, so the
+		// last-resort seed works out of the box without extra flags.
+		if def := filepath.Join(*home, "community-hubs.json"); fileExists(def) {
+			commPath = def
+		}
+	}
+	if commPath != "" {
+		f, err := hub.LoadCommunity(commPath, nil)
 		if err != nil {
 			return err
 		}
 		comm = f.Hubs
+		slog.Info("community list loaded", "path", commPath, "hubs", len(comm))
 	}
 	var invites []string
 	if *inv != "" {
@@ -486,6 +496,11 @@ func parseKey(s string) ([]byte, error) {
 		return nil, fmt.Errorf("ed25519 pubkey must be 32 bytes hex")
 	}
 	return out, nil
+}
+
+func fileExists(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && !fi.IsDir()
 }
 
 func min(a, b int) int {

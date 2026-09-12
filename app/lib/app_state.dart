@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:starmesh_invite/invite.dart';
@@ -52,6 +55,7 @@ class ChatLine {
 
 class AppState extends ChangeNotifier {
   AppState() {
+    _loadCommunity();
     _tick = Timer.periodic(const Duration(seconds: 2), (_) => refresh());
     refresh();
     _pumpMessages();
@@ -70,6 +74,7 @@ class AppState extends ChangeNotifier {
   String refuse = '';
   List<HubRow> hubs = [];
   List<PeerRow> peers = [];
+  List<HubRow> communitySeeds = [];
   List<ChatLine> lines = [];
 
   LinkState get link {
@@ -83,6 +88,47 @@ class AppState extends ChangeNotifier {
     _disposed = true;
     _tick?.cancel();
     super.dispose();
+  }
+
+  /// Load the bundled, signed community list so the app can show the
+  /// last-resort seed(s) even before the local daemon has dialed anything.
+  /// The daemon is what actually dials them (it auto-loads the same list).
+  Future<void> _loadCommunity() async {
+    try {
+      final raw = await rootBundle.loadString('assets/community-hubs.json');
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      final list = (j['hubs'] as List?) ?? [];
+      final rows = <HubRow>[];
+      for (final e in list) {
+        final m = e as Map<String, dynamic>;
+        final edHex = '${m['ed25519'] ?? ''}';
+        if (edHex.length != 64) continue;
+        final ed = _hexBytes(edHex);
+        String short = '';
+        try {
+          short = Invite(pubKey: ed, cloudSeed: true).shortDisplay();
+        } catch (_) {}
+        rows.add(HubRow(
+          name: '${m['name'] ?? ''}',
+          role: 'seed',
+          ipv6: '${m['ipv6'] ?? ''}',
+          ipv4: '${m['ipv4'] ?? ''}',
+          fingerprint: short,
+          proto: 'quic',
+          cloudSeed: true,
+        ));
+      }
+      communitySeeds = rows;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Uint8List _hexBytes(String h) {
+    final out = Uint8List(h.length ~/ 2);
+    for (var i = 0; i < out.length; i++) {
+      out[i] = int.parse(h.substring(i * 2, i * 2 + 2), radix: 16);
+    }
+    return out;
   }
 
   Future<void> refresh() async {

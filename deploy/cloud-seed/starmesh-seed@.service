@@ -1,0 +1,22 @@
+[Unit]
+Description=Starmesh cloud seed (last-resort bootstrap hub)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=starmesh
+Group=starmesh
+Environment=STARMESH_HOME=/var/lib/starmesh
+# A cloud seed is the last resort: it has no Starlink IPv6, so --force is
+# required and --cloud-seed marks it lowest priority for spokes.
+ExecStart=/usr/local/bin/starmesh hub --cloud-seed --force --name "%i"
+Restart=on-failure
+RestartSec=5
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+LimitNOFILE=65535
+# QUIC wants a large UDP receive buffer.
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

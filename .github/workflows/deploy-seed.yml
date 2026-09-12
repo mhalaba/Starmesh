@@ -1,0 +1,41 @@
+name: Deploy cloud seed (Fly.io)
+
+# Manual, opt-in deploy of the last-resort Starmesh seed to Fly.io.
+# Requires a repo secret FLY_API_TOKEN (create with: fly tokens create deploy).
+on:
+  workflow_dispatch:
+    inputs:
+      seed_name:
+        description: "Seed name shown on the invite banner"
+        required: true
+        default: "seed-fly"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-seed
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy seed
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy \
+            --config deploy/cloud-seed/fly/fly.toml \
+            --dockerfile deploy/cloud-seed/fly/Dockerfile \
+            --env SEED_NAME="${{ inputs.seed_name }}" \
+            --remote-only .
+
+      - name: Print invite
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          sleep 8
+          flyctl logs --no-tail | grep -A3 "starmesh1:" || \
+            echo "Invite not in the tail yet; run: fly logs | grep starmesh1:"

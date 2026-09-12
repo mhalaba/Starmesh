@@ -35,6 +35,11 @@ class _NetworkScreenState extends State<NetworkScreen> {
               _hint('No hub yet. Paste an invite below, scan a QR, or wait for a community seed.')
             else
               ...s.hubs.map((h) => _hubCard(h)),
+            if (s.communitySeeds.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _sectionTitle('Community seeds', 'bundled'),
+              ...s.communitySeeds.map((h) => _hubCard(h)),
+            ],
             const SizedBox(height: 8),
             _sectionTitle('Peers', s.peers.isEmpty ? null : '${s.peers.length}'),
             if (s.peers.isEmpty)

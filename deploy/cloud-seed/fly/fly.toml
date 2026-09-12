@@ -1,0 +1,47 @@
+# Starmesh cloud seed on Fly.io.
+#
+# One-time setup (from this directory):
+#   fly launch --no-deploy --copy-config --name starmesh-seed
+#   fly volume create starmesh_data --size 1 --region fra
+#   fly ips allocate-v6                 # free dedicated IPv6
+#   fly deploy --config fly.toml --dockerfile Dockerfile
+#
+# Grab the invite the seed prints on boot:
+#   fly logs | grep -A3 starmesh1:
+#
+# NOTE: build context must be the repo root so the Dockerfile can COPY the
+# whole module. Deploy with:
+#   fly deploy --config deploy/cloud-seed/fly/fly.toml \
+#              --dockerfile deploy/cloud-seed/fly/Dockerfile .
+
+app = "starmesh-seed"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  STARMESH_HOME = "/data"
+
+[mounts]
+  source = "starmesh_data"
+  destination = "/data"
+
+# QUIC first (UDP), TLS fallback (TCP). Fly forwards both on 4433.
+[[services]]
+  protocol = "udp"
+  internal_port = 4433
+
+  [[services.ports]]
+    port = 4433
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 4433
+
+  [[services.ports]]
+    port = 4433
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

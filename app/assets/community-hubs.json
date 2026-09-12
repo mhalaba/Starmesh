@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "root_pubkey": "8a3f79047ecc8f6381b3360ce2120dee66fa814f56b2aef51c0c3ea27f418cfb",
+  "hubs": [
+    {
+      "name": "seed-fra",
+      "ed25519": "6b5b865ef02fb2764080d37337c72e11c8a2df5c6f344069d18d44ae8705a32a",
+      "x25519": "6e844c04c8a185e8cbe1c3ec260fe689bb5dde3ebc4ab7f0fb33d00fe1e31b14",
+      "port": 4433,
+      "last_seen": "0001-01-01T00:00:00Z",
+      "cloud_seed": true
+    }
+  ],
+  "sig": "2843fd9bd845d36275b406f5202ddffb479c04e5388b374392953eb076ad7ed1a5a44b2eb26bc6d21addb2b37a7d82df477251e0beb1b5dab347940c864cba0b"
+}
