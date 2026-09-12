@@ -468,7 +468,18 @@ func (sp *Spoke) StatusHubs() []map[string]any {
 		hubs = append(hubs, row)
 	}
 	if h := sp.ConnectedHub(); h != nil {
-		add(h.Name, "hub", Fingerprint(h.Ed25519), "", "", 0, h.CloudSeed, false)
+		ipv6, ipv4 := "", ""
+		var rtt int64
+		if sp.cfg.Cache != nil {
+			fp := Fingerprint(h.Ed25519)
+			for _, c := range sp.cfg.Cache.List() {
+				if Fingerprint(c.Ed25519) == fp {
+					ipv6, ipv4, rtt = c.IPv6, c.IPv4, c.LastRTTMs
+					break
+				}
+			}
+		}
+		add(h.Name, "hub", Fingerprint(h.Ed25519), ipv6, ipv4, rtt, h.CloudSeed, false)
 	}
 	if sp.cfg.Cache != nil {
 		for _, h := range sp.cfg.Cache.List() {
