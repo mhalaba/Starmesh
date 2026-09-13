@@ -61,7 +61,43 @@ const headers = () => {
 };
 
 let lang = localStorage.getItem("starmesh_lang") || "pl";
+let theme = localStorage.getItem("starmesh_theme") || "mario";
 let state = {};
+
+const THEMES = {
+  mario: {
+    color: "#5c94fc",
+    pl: { l1: "1UP", l2: "WORLD", l3: "TIME" },
+    en: { l1: "1UP", l2: "WORLD", l3: "TIME" },
+  },
+  dune: {
+    color: "#1a1008",
+    pl: { l1: "DOM", l2: "SIETCH", l3: "PRZYPRAWA" },
+    en: { l1: "HOUSE", l2: "SIETCH", l3: "SPICE" },
+  },
+  witcher: {
+    color: "#0c0b09",
+    pl: { l1: "WILK", l2: "ZNAK", l3: "ORIN" },
+    en: { l1: "WOLF", l2: "SIGN", l3: "OREN" },
+  },
+};
+
+function applyTheme(name) {
+  if (!THEMES[name]) name = "mario";
+  theme = name;
+  document.body.dataset.theme = name;
+  localStorage.setItem("starmesh_theme", name);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = THEMES[name].color;
+  document.querySelectorAll(".skin").forEach((b) => b.classList.toggle("on", b.dataset.theme === name));
+  const labs = THEMES[name][lang] || THEMES[name].en;
+  const a = document.getElementById("hudL1");
+  const b = document.getElementById("hudL2");
+  const c = document.getElementById("hudL3");
+  if (a) a.textContent = labs.l1;
+  if (b) b.textContent = labs.l2;
+  if (c) c.textContent = labs.l3;
+}
 
 function t(k) { return (I18N[lang] && I18N[lang][k]) || I18N.en[k] || k; }
 
@@ -74,6 +110,7 @@ function applyI18n() {
     el.placeholder = t(el.getAttribute("data-i18n-ph"));
   });
   document.getElementById("langBtn").textContent = lang === "pl" ? "EN" : "PL";
+  applyTheme(theme);
 }
 
 function fmtUp(s) {
@@ -219,6 +256,12 @@ document.getElementById("langBtn").onclick = () => {
   refresh();
 };
 
+document.querySelectorAll(".skin").forEach((b) => {
+  b.onclick = () => applyTheme(b.dataset.theme);
+});
+const startTheme = new URLSearchParams(location.search).get("theme");
+if (startTheme) applyTheme(startTheme);
+
 document.getElementById("chatForm").onsubmit = async (e) => {
   e.preventDefault();
   const to = document.getElementById("chatTo").value.trim();
@@ -264,5 +307,6 @@ document.getElementById("btnStop").onclick = async () => {
 };
 
 applyI18n();
+applyTheme(theme);
 refresh();
 setInterval(refresh, 2000);
