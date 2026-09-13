@@ -14,13 +14,16 @@ func OperatorHome(hubHome string) string {
 }
 
 // StartOperatorSpoke dials the local hub invite and records chat for the UI.
-func StartOperatorSpoke(ctx context.Context, home, name string, invites []string, chat *ChatLog) (*Spoke, *Identity, error) {
+func StartOperatorSpoke(ctx context.Context, home, name string, invites []string, chat *ChatLog) (*Spoke, *Identity, *ChatLog, error) {
 	id, err := LoadOrCreateIdentity(home, name)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if name != "" {
 		id.Name = name
+	}
+	if chat == nil {
+		chat = OpenChatLog(home, id)
 	}
 	sp := NewSpoke(id, SpokeConfig{
 		Name:    id.Name,
@@ -38,7 +41,7 @@ func StartOperatorSpoke(ctx context.Context, home, name string, invites []string
 		},
 	})
 	go func() { _ = sp.Run(ctx) }()
-	return sp, id, nil
+	return sp, id, chat, nil
 }
 
 func (sp *Spoke) PeerRows() []map[string]any {
@@ -47,6 +50,7 @@ func (sp *Spoke) PeerRows() []map[string]any {
 		out = append(out, map[string]any{
 			"name":        p.Name,
 			"fingerprint": Fingerprint(p.Ed),
+			"box":         p.X != [32]byte{},
 		})
 	}
 	return out

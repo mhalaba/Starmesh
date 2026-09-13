@@ -236,7 +236,7 @@ func runHub(o runOpts) error {
 	var op *hub.Spoke
 	var opID *hub.Identity
 	if o.operator {
-		op, opID, err = hub.StartOperatorSpoke(ctx, hub.OperatorHome(home), name, []string{blob}, chat)
+		op, opID, chat, err = hub.StartOperatorSpoke(ctx, hub.OperatorHome(home), name, []string{blob}, nil)
 		if err != nil {
 			return err
 		}
@@ -285,8 +285,7 @@ func runHub(o runOpts) error {
 			if op == nil {
 				return fmt.Errorf("no operator spoke; restart with default --operator")
 			}
-			chat.Add("me", text, true)
-			return op.SendToName(to, text)
+			return chat.AfterSeal("me", text, true, op.SendToName(to, text))
 		},
 		AddInvite: func(raw string) error {
 			if op == nil {
@@ -360,7 +359,7 @@ func cmdSpoke(args []string) error {
 		}
 	}
 	var banner string
-	chat := &hub.ChatLog{}
+	chat := hub.OpenChatLog(*home, id)
 	sp := hub.NewSpoke(id, hub.SpokeConfig{
 		Name:       *name,
 		Invites:    invites,
@@ -421,8 +420,7 @@ func cmdSpoke(args []string) error {
 		Peers:    sp.PeerRows,
 		Probe:    func() map[string]any { return hub.ProbeSnapshot(int(*port), false) },
 		Send: func(to, text string) error {
-			chat.Add("me", text, true)
-			return sp.SendToName(to, text)
+			return chat.AfterSeal("me", text, true, sp.SendToName(to, text))
 		},
 		AddInvite: func(raw string) error {
 			return sp.AddInvite(raw)

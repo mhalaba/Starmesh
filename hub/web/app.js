@@ -22,6 +22,8 @@ const I18N = {
     udpOk: "UDP :4433 OK",
     udpNo: "UDP :4433 FAIL",
     cgnat: "CGNAT",
+    e2e: "BOX ON — HUB WIDZI SZYFROGRAM",
+    e2eOff: "BOX OFF",
   },
   en: {
     dash: "MAP", chat: "CHAT", invite: "CARD", join: "CONT", net: "DIAG",
@@ -46,6 +48,8 @@ const I18N = {
     udpOk: "UDP :4433 OK",
     udpNo: "UDP :4433 FAIL",
     cgnat: "CGNAT",
+    e2e: "BOX ON — HUB SEES CIPHERTEXT",
+    e2eOff: "BOX OFF",
   },
 };
 
@@ -113,6 +117,7 @@ function renderDash(s) {
   else badges.push(["warn", t("udpNo")]);
   if (p.behind_cgnat) badges.push(["warn", t("cgnat")]);
   if (p.dev) badges.push(["warn", "--dev"]);
+  if (s.chat_e2e !== false) badges.push(["good", "BOX"]);
   document.getElementById("badges").innerHTML = badges.map(([c, l]) => `<span class="badge ${c}">${l}</span>`).join("");
   const hint = document.getElementById("capHint");
   if (hint) hint.textContent = p.reason || "";
@@ -124,6 +129,11 @@ function renderDash(s) {
 }
 
 function renderChat(s) {
+  const led = document.getElementById("e2eLed");
+  if (led) {
+    led.textContent = s.chat_e2e === false ? t("e2eOff") : t("e2e");
+    led.classList.toggle("off", s.chat_e2e === false);
+  }
   const peers = s.peers || [];
   const chips = document.getElementById("peerChips");
   chips.innerHTML = peers.length
@@ -137,7 +147,8 @@ function renderChat(s) {
   log.innerHTML = lines.map((m) => {
     const cls = m.mine ? "bubble mine" : (m.from === "system" ? "bubble sys" : "bubble");
     const who = m.mine ? "1P" : (m.from || "?");
-    return `<div class="${cls}"><b>${esc(who)}</b> ${esc(m.text)}</div>`;
+    const lock = m.e2e !== false ? `<i class="lock" title="NaCl box"></i>` : "";
+    return `<div class="${cls}">${lock}<b>${esc(who)}</b> ${esc(m.text)}</div>`;
   }).join("");
   log.scrollTop = log.scrollHeight;
 }

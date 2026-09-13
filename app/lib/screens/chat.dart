@@ -51,7 +51,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         color: l.mine ? const Color(0xFF1C3A4A) : const Color(0xFF1B1F28),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text('${l.from}: ${l.text}'),
+                      child: Text('${l.e2e ? '🔒 ' : ''}${l.from}: ${l.text}'),
                     ),
                   );
                 },

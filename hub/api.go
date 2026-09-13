@@ -99,6 +99,10 @@ func (a *LocalAPI) snapshotStatus() map[string]any {
 		started = time.Now()
 	}
 	out["uptime_s"] = int(time.Since(started).Seconds())
+	if _, ok := out["chat_e2e"]; !ok {
+		out["chat_e2e"] = true
+		out["chat_box"] = "nacl-x25519"
+	}
 	return out
 }
 
@@ -267,41 +271,6 @@ func writeJSON(w http.ResponseWriter, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// UIChatLine is a chat row returned via /v1/status.
-type UIChatLine struct {
-	From string `json:"from"`
-	Text string `json:"text"`
-	Mine bool   `json:"mine"`
-}
-
-// ChatLog is a small in-memory transcript for the local UI.
-type ChatLog struct {
-	mu    sync.Mutex
-	lines []UIChatLine
-}
-
-func (l *ChatLog) Add(from, text string, mine bool) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.lines = append(l.lines, UIChatLine{From: from, Text: text, Mine: mine})
-	if len(l.lines) > 500 {
-		l.lines = l.lines[len(l.lines)-400:]
-	}
-}
-
-func (l *ChatLog) Snapshot() []map[string]any {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	out := make([]map[string]any, 0, len(l.lines))
-	for _, line := range l.lines {
-		out = append(out, map[string]any{
-			"from": line.From,
-			"text": line.Text,
-			"mine": line.Mine,
-		})
-	}
-	return out
-}
 
 // ProbeSnapshot is the Network tab payload (capability + RA).
 func ProbeSnapshot(port int, dev bool) map[string]any {

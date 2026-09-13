@@ -20,7 +20,9 @@ const (
 )
 
 // Envelope is the only application payload that crosses a hub.
-// Hubs see id/from/to/ts/type/sig/ciphertext and never the plaintext.
+// Hubs see id/from/to/ts/type/sig/from_x/ciphertext and never the plaintext.
+// FromX is the sender X25519 public key (not secret) so a first-contact
+// recipient can open the box before presence gossip arrives.
 type Envelope struct {
 	ID         string `json:"id"`
 	From       []byte `json:"from"`
@@ -28,6 +30,7 @@ type Envelope struct {
 	Ts         int64  `json:"ts"`
 	Type       string `json:"type"`
 	Sig        []byte `json:"sig"`
+	FromX      []byte `json:"from_x,omitempty"`
 	Ciphertext []byte `json:"ciphertext"`
 }
 
@@ -93,6 +96,7 @@ func Seal(from *Identity, toXPub [32]byte, toEd []byte, typ string, plaintext []
 		To:         append([]byte(nil), toEd...),
 		Ts:         time.Now().Unix(),
 		Type:       typ,
+		FromX:      append([]byte(nil), from.XPub[:]...),
 		Ciphertext: sealed,
 	}
 	env.Sign(from.EdPriv)
