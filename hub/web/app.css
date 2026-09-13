@@ -40,6 +40,9 @@ html, body {
 body { min-height: 100dvh; overflow-x: hidden; }
 button { font: inherit; cursor: pointer; }
 
+.deco { display: none; }
+body[data-theme="mario"] .deco.mario { display: block; }
+
 /* Solid NES sky. No soft landscape fades. */
 .world {
   position: fixed;

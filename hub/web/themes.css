@@ -1,0 +1,457 @@
+/* Skin picker + Diuna / Wiedźmin. Mario stays the default in app.css. */
+
+.skins {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  background: var(--black);
+  padding: 0 6px 8px;
+}
+.skin {
+  font-family: VT323, monospace;
+  font-size: 18px;
+  letter-spacing: 1px;
+  background: #1a1408;
+  color: var(--gold);
+  border: 3px solid var(--black);
+  padding: 4px 2px;
+}
+.skin.on {
+  background: var(--gold);
+  color: var(--black);
+}
+
+body[data-theme="dune"] .deco.dune,
+body[data-theme="witcher"] .deco.witcher { display: block; }
+.horizon { height: 0; }
+body[data-theme="dune"] .horizon,
+body[data-theme="witcher"] .horizon { height: 76px; }
+body[data-theme="dune"] .deco.mario,
+body[data-theme="witcher"] .deco.mario { display: none; }
+
+/* —— DIUNA / Arrakis —— */
+body[data-theme="dune"] {
+  --sky: #1a1008;
+  --brick: #6a3a14;
+  --brick-hi: #c47828;
+  --mortar: #3a1c08;
+  --pipe: #4a6a48;
+  --pipe-hi: #7a9a6a;
+  --pipe-d: #2a3a24;
+  --gold: #d4a017;
+  --red: #8a2a10;
+  --black: #0a0804;
+  --cream: #e8d2a0;
+  --nes-w: #f0e0b8;
+  --hill: #8a5a20;
+  --hill-d: #5a3810;
+  --ok: #d4a017;
+  --wait: #c45818;
+  font-family: Palatino, "Palatino Linotype", "Times New Roman", serif;
+  color: #f0e0b8;
+}
+body[data-theme="dune"] html,
+body[data-theme="dune"] {
+  background: #1a1008;
+}
+body[data-theme="dune"] .world {
+  background:
+    linear-gradient(#120c18 0 38%, #3a1810 38% 58%, #8a3a14 58% 72%, #c47828 72% 86%, #6a3a14 86% 100%);
+  image-rendering: auto;
+}
+body[data-theme="dune"] .sun {
+  position: absolute;
+  top: 198px;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  background: #fcbc18;
+  box-shadow: 0 0 0 6px #c47828;
+}
+body[data-theme="dune"] .moon {
+  position: absolute;
+  background: #e8d2a0;
+  border: 3px solid #0a0804;
+}
+body[data-theme="dune"] .moon.m1 { top: 188px; left: 10%; width: 16px; height: 16px; }
+body[data-theme="dune"] .moon.m2 { top: 204px; right: 14%; width: 11px; height: 11px; }
+body[data-theme="dune"] .ridge {
+  position: absolute;
+  bottom: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+body[data-theme="dune"] .ridge i {
+  display: block;
+  height: 12px;
+  background: #8a5a20;
+}
+body[data-theme="dune"] .ridge.r1 { left: 2%; }
+body[data-theme="dune"] .ridge.r1 i:nth-child(1) { width: 36px; background: #6a3a14; }
+body[data-theme="dune"] .ridge.r1 i:nth-child(2) { width: 64px; }
+body[data-theme="dune"] .ridge.r1 i:nth-child(3) { width: 96px; }
+body[data-theme="dune"] .ridge.r1 i:nth-child(4) { width: 128px; background: #6a3a14; }
+body[data-theme="dune"] .ridge.r2 { left: 38%; }
+body[data-theme="dune"] .ridge.r2 i:nth-child(1) { width: 40px; }
+body[data-theme="dune"] .ridge.r2 i:nth-child(2) { width: 72px; background: #6a3a14; }
+body[data-theme="dune"] .ridge.r2 i:nth-child(3) { width: 110px; }
+body[data-theme="dune"] .ridge.r3 { right: 4%; }
+body[data-theme="dune"] .ridge.r3 i:nth-child(1) { width: 28px; }
+body[data-theme="dune"] .ridge.r3 i:nth-child(2) { width: 52px; }
+body[data-theme="dune"] .ridge.r3 i:nth-child(3) { width: 80px; background: #6a3a14; }
+body[data-theme="dune"] .ridge.r3 i:nth-child(4) { width: 104px; }
+body[data-theme="dune"] .worm {
+  position: absolute;
+  left: 18%;
+  bottom: 86px;
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+body[data-theme="dune"] .worm i {
+  display: block;
+  width: 10px;
+  background: #3a2410;
+  border: 2px solid #0a0804;
+}
+body[data-theme="dune"] .worm i:nth-child(1) { height: 10px; }
+body[data-theme="dune"] .worm i:nth-child(2) { height: 16px; }
+body[data-theme="dune"] .worm i:nth-child(3) { height: 22px; }
+body[data-theme="dune"] .worm i:nth-child(4) { height: 14px; }
+body[data-theme="dune"] .worm i:nth-child(5) { height: 8px; }
+body[data-theme="dune"] .ground {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #c47828 0 6px,
+      #a88838 6px 8px,
+      #8a5a20 8px 14px
+    );
+  background-color: #c47828;
+  border-top-color: #3a1c08;
+}
+body[data-theme="dune"] .hud,
+body[data-theme="dune"] .title-plate,
+body[data-theme="dune"] .skins {
+  background: #0a0804;
+  font-family: Palatino, "Times New Roman", serif;
+}
+body[data-theme="dune"] .hud {
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+body[data-theme="dune"] .hud-lab { color: #d4a017; }
+body[data-theme="dune"] .hud-col strong {
+  font-family: Palatino, serif;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: #f0e0b8;
+}
+body[data-theme="dune"] .title-plate h1 {
+  font-family: Palatino, serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: #d4a017;
+  text-shadow: 2px 2px 0 #3a1c08;
+  font-weight: 700;
+}
+body[data-theme="dune"] .coin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d4a017;
+  box-shadow: inset 2px 2px 0 #f0e0b8;
+}
+body[data-theme="dune"] .ticker {
+  font-family: Palatino, serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+body[data-theme="dune"] .ticker.ok { background: #2a3a24; color: #d4a017; }
+body[data-theme="dune"] .ticker.wait { background: #8a2a10; color: #f0e0b8; }
+body[data-theme="dune"] .stage-tag,
+body[data-theme="dune"] .gameover,
+body[data-theme="dune"] .blink,
+body[data-theme="dune"] .box-led,
+body[data-theme="dune"] .short,
+body[data-theme="dune"] .item-box > header,
+body[data-theme="dune"] .pad-a,
+body[data-theme="dune"] .pad-b,
+body[data-theme="dune"] button[type="submit"] {
+  font-family: Palatino, serif;
+  letter-spacing: 2px;
+}
+body[data-theme="dune"] .stage-tag { color: #d4a017; text-shadow: 2px 2px 0 #0a0804; }
+body[data-theme="dune"] .item-box {
+  background: #e8d2a0;
+  color: #1a1008;
+  box-shadow: 6px 6px 0 #3a1c08;
+}
+body[data-theme="dune"] .item-box > header { background: #c47828; color: #0a0804; }
+body[data-theme="dune"] .item-box .q { display: none; }
+body[data-theme="dune"] .lede,
+body[data-theme="dune"] .hint {
+  background: #e8d2a0;
+  color: #1a1008;
+  outline-color: #c47828;
+}
+body[data-theme="dune"] .nes-box {
+  background: #1a1008;
+  color: #e8d2a0;
+  outline-color: #d4a017;
+  box-shadow: inset 0 0 0 8px #3a1c08;
+}
+body[data-theme="dune"] .bubble.mine { color: #d4a017; }
+body[data-theme="dune"] input,
+body[data-theme="dune"] textarea {
+  background: #0a0804;
+  color: #d4a017;
+  outline-color: #c47828;
+  font-family: VT323, monospace;
+}
+body[data-theme="dune"] .pad-a,
+body[data-theme="dune"] button[type="submit"] {
+  background: #8a2a10;
+  box-shadow: inset -3px -3px 0 #3a1008, 4px 4px 0 #0a0804;
+}
+body[data-theme="dune"] .pad-b {
+  background: #2a4a58;
+  box-shadow: inset -3px -3px 0 #102028, 4px 4px 0 #0a0804;
+}
+body[data-theme="dune"] .dock {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #c47828 0 28px,
+      #8a5a20 28px 30px,
+      #c47828 30px 56px
+    );
+}
+body[data-theme="dune"] .dock button { font-family: Palatino, serif; font-size: 11px; letter-spacing: 1px; }
+body[data-theme="dune"] .dock button.on { background: #d4a017; }
+body[data-theme="dune"] .btn-mini {
+  font-family: Palatino, serif;
+  background: #8a2a10;
+}
+body[data-theme="dune"] .ico.brick { background: #c47828; }
+body[data-theme="dune"] .ico.mushroom {
+  background: radial-gradient(circle at 50% 50%, #4aa3c7 0 40%, #1a1008 41%);
+}
+body[data-theme="dune"] .ico.qblock { background: #d4a017; }
+body[data-theme="dune"] .ico.qblock::after { content: ""; }
+body[data-theme="dune"] .ico.pipe { background: #4a6a48; box-shadow: none; }
+body[data-theme="dune"] .ico.star { background: #d4a017; clip-path: none; border-radius: 50%; }
+
+/* —— WIEDŹMIN / Kaer Morhen —— */
+body[data-theme="witcher"] {
+  --sky: #0c100c;
+  --brick: #2a2218;
+  --brick-hi: #3a3224;
+  --mortar: #0a0804;
+  --pipe: #2a3a24;
+  --pipe-hi: #4a5a38;
+  --pipe-d: #141c10;
+  --gold: #c9a227;
+  --red: #6b1510;
+  --black: #080704;
+  --cream: #e4d2a8;
+  --nes-w: #e4d2a8;
+  --hill: #1a2418;
+  --hill-d: #0c140c;
+  --ok: #c9a227;
+  --wait: #8a3a18;
+  font-family: Palatino, "Palatino Linotype", "Times New Roman", serif;
+  color: #e4d2a8;
+}
+body[data-theme="witcher"] {
+  background: #0c100c;
+}
+body[data-theme="witcher"] .world {
+  background: #0c100c;
+  image-rendering: auto;
+}
+body[data-theme="witcher"] .deco.witcher .moon {
+  position: absolute;
+  top: 188px;
+  right: 12%;
+  width: 36px;
+  height: 36px;
+  background: #e4d2a8;
+  box-shadow: -8px 4px 0 #0c100c inset;
+}
+body[data-theme="witcher"] .pine {
+  position: absolute;
+  bottom: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+body[data-theme="witcher"] .pine i {
+  display: block;
+  height: 14px;
+  background: #0a120a;
+}
+body[data-theme="witcher"] .pine.p1 { left: 6%; }
+body[data-theme="witcher"] .pine.p1 i:nth-child(1) { width: 12px; }
+body[data-theme="witcher"] .pine.p1 i:nth-child(2) { width: 22px; }
+body[data-theme="witcher"] .pine.p1 i:nth-child(3) { width: 32px; }
+body[data-theme="witcher"] .pine.p1 i:nth-child(4) { width: 10px; background: #1a1610; }
+body[data-theme="witcher"] .pine.p2 { left: 24%; }
+body[data-theme="witcher"] .pine.p2 i:nth-child(1) { width: 14px; background: #141c10; }
+body[data-theme="witcher"] .pine.p2 i:nth-child(2) { width: 26px; background: #141c10; }
+body[data-theme="witcher"] .pine.p2 i:nth-child(3) { width: 8px; background: #1a1610; }
+body[data-theme="witcher"] .pine.p3 { right: 22%; }
+body[data-theme="witcher"] .pine.p3 i:nth-child(1) { width: 10px; }
+body[data-theme="witcher"] .pine.p3 i:nth-child(2) { width: 20px; }
+body[data-theme="witcher"] .pine.p3 i:nth-child(3) { width: 30px; }
+body[data-theme="witcher"] .pine.p3 i:nth-child(4) { width: 8px; background: #1a1610; }
+body[data-theme="witcher"] .keep {
+  position: absolute;
+  right: 36px;
+  bottom: 72px;
+  width: 54px;
+  height: 40px;
+  background: #2a2218;
+  border: 3px solid #080704;
+  box-shadow: 10px -16px 0 #2a2218, 28px -8px 0 #1a1610;
+}
+body[data-theme="witcher"] .ground {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #2a2218 0 16px,
+      #1a1610 16px 18px,
+      #3a3224 18px 34px
+    );
+  background-color: #2a2218;
+  border-top-color: #c9a227;
+}
+body[data-theme="witcher"] .hud,
+body[data-theme="witcher"] .title-plate,
+body[data-theme="witcher"] .skins {
+  background: #080704;
+}
+body[data-theme="witcher"] .hud {
+  font-family: Palatino, serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  border-bottom: 2px solid #c9a227;
+}
+body[data-theme="witcher"] .hud-lab { color: #c9a227; }
+body[data-theme="witcher"] .hud-col strong {
+  font-family: Palatino, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: #e4d2a8;
+}
+body[data-theme="witcher"] .title-plate h1 {
+  font-family: Palatino, serif;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #c9a227;
+  text-shadow: 2px 2px 0 #080704;
+}
+body[data-theme="witcher"] .coin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c9a227;
+  box-shadow: inset 0 0 0 3px #080704, inset 0 0 0 5px #c9a227;
+}
+body[data-theme="witcher"] .ticker {
+  font-family: Palatino, serif;
+  font-style: italic;
+  font-size: 16px;
+}
+body[data-theme="witcher"] .ticker.ok { background: #1a2418; color: #c9a227; }
+body[data-theme="witcher"] .ticker.wait { background: #6b1510; color: #e4d2a8; }
+body[data-theme="witcher"] .stage-tag,
+body[data-theme="witcher"] .gameover,
+body[data-theme="witcher"] .blink,
+body[data-theme="witcher"] .box-led,
+body[data-theme="witcher"] .short,
+body[data-theme="witcher"] .item-box > header,
+body[data-theme="witcher"] .pad-a,
+body[data-theme="witcher"] .pad-b,
+body[data-theme="witcher"] button[type="submit"] {
+  font-family: Palatino, serif;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+body[data-theme="witcher"] .stage-tag { color: #c9a227; text-shadow: 2px 2px 0 #080704; }
+body[data-theme="witcher"] .item-box {
+  background: #e4d2a8;
+  color: #1a140c;
+  box-shadow: 6px 6px 0 #080704;
+}
+body[data-theme="witcher"] .item-box > header { background: #2a2218; color: #c9a227; border-bottom-color: #c9a227; }
+body[data-theme="witcher"] .item-box .q {
+  background: #c9a227;
+  color: #080704;
+  box-shadow: none;
+  border-radius: 50%;
+}
+body[data-theme="witcher"] .lede,
+body[data-theme="witcher"] .hint {
+  background: #e4d2a8;
+  color: #1a140c;
+  outline-color: #c9a227;
+}
+body[data-theme="witcher"] .nes-box {
+  background: #e4d2a8;
+  color: #1a140c;
+  outline-color: #c9a227;
+  box-shadow: inset 0 0 0 8px #2a2218;
+}
+body[data-theme="witcher"] .bubble.mine { color: #6b1510; }
+body[data-theme="witcher"] input,
+body[data-theme="witcher"] textarea {
+  background: #080704;
+  color: #c9a227;
+  outline-color: #c9a227;
+  font-family: VT323, monospace;
+}
+body[data-theme="witcher"] .pad-a,
+body[data-theme="witcher"] button[type="submit"] {
+  background: #6b1510;
+  box-shadow: inset -3px -3px 0 #3a0c08, 4px 4px 0 #080704;
+}
+body[data-theme="witcher"] .pad-b {
+  background: #2a3a24;
+  box-shadow: inset -3px -3px 0 #101808, 4px 4px 0 #080704;
+}
+body[data-theme="witcher"] .dock {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #2a2218 0 20px,
+      #1a1610 20px 22px,
+      #3a3224 22px 40px
+    );
+  border-top-color: #c9a227;
+}
+body[data-theme="witcher"] .dock button { font-family: Palatino, serif; font-size: 11px; font-style: italic; }
+body[data-theme="witcher"] .dock button.on { background: #c9a227; }
+body[data-theme="witcher"] .btn-mini {
+  font-family: Palatino, serif;
+  background: #6b1510;
+  border-color: #c9a227;
+}
+body[data-theme="witcher"] .ico.brick { background: #2a2218; }
+body[data-theme="witcher"] .ico.mushroom {
+  background: radial-gradient(circle at 50% 40%, #c9a227 0 30%, #080704 31%);
+}
+body[data-theme="witcher"] .ico.qblock { background: #c9a227; border-radius: 50%; }
+body[data-theme="witcher"] .ico.qblock::after { content: ""; }
+body[data-theme="witcher"] .ico.pipe { background: #2a3a24; box-shadow: none; }
+body[data-theme="witcher"] .ico.star { background: #c9a227; }
+
+body[data-theme="dune"] .skins .skin,
+body[data-theme="witcher"] .skins .skin {
+  font-family: Palatino, serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+}

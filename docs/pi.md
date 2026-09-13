@@ -111,6 +111,7 @@ System-wide units: `deploy/starmesh.service` (node),
 ```
 
 Chat: open `http://10.1.1.209:7780/`, pick **alice** on CZAT, send.
+Panel skins (top bar): MARIO / DIUNA / WIEDŹMIN — stored in the browser.
 Each line is a NaCl box — the hub sees ciphertext, not the text.
 The panel log is also boxed on disk (`--home/operator/chat.box`).
 Or use alice’s panel on `:7781` (loopback only in this example).
