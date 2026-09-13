@@ -99,6 +99,34 @@ func inviteBlob(t *testing.T, s *Server) string {
 	return blob
 }
 
+func TestDevLabInviteIncludesIPv4AndListens(t *testing.T) {
+	id, err := GenerateIdentity("lab4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NewServer(id, ServerConfig{
+		Name:     "lab4",
+		Port:     0,
+		Dev:      true,
+		PublicV6: net.ParseIP("::1"),
+		LabIPv4:  net.ParseIP("127.0.0.1"),
+	})
+	if err := s.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(s.Stop)
+	inv := s.Invite()
+	if inv.IPv4 == nil || inv.IPv4.String() != "127.0.0.1" {
+		t.Fatalf("lab ipv4 missing: %+v", inv)
+	}
+	d := net.Dialer{Timeout: time.Second}
+	c, err := d.Dial("tcp4", fmt.Sprintf("127.0.0.1:%d", s.cfg.Port))
+	if err != nil {
+		t.Fatalf("dev lab must accept IPv4: %v", err)
+	}
+	_ = c.Close()
+}
+
 func TestAcceptanceTwoSpokesIPv6OnlyHub(t *testing.T) {
 	hub := startDevHub(t, "OSP Nadarzyn")
 	blob := inviteBlob(t, hub)

@@ -107,6 +107,7 @@ function renderDash(s) {
   if (p.has_ipv6) badges.push(["good", t("ipv6Real")]);
   else badges.push(["warn", t("ipv6Lab")]);
   if (p.claim_ipv4) badges.push(["good", t("ipv4Pub")]);
+  else if (p.lab_ipv4) badges.push(["warn", "LAN " + p.lab_ipv4]);
   else badges.push(["", t("ipv4None")]);
   if (p.can_bind_udp) badges.push(["good", t("udpOk")]);
   else badges.push(["warn", t("udpNo")]);

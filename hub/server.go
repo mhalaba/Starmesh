@@ -77,7 +77,8 @@ func (s *Server) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	udp, err := listenUDP(s.cfg.Host, s.cfg.Port, s.cfg.IPv6Only || s.cfg.PublicV4 == nil)
+	v6only := s.cfg.IPv6Only || (s.cfg.PublicV4 == nil && s.cfg.LabIPv4 == nil)
+	udp, err := listenUDP(s.cfg.Host, s.cfg.Port, v6only)
 	if err != nil {
 		return fmt.Errorf("udp listen: %w", err)
 	}
@@ -87,7 +88,7 @@ func (s *Server) Start(ctx context.Context) error {
 			s.cfg.Port = port
 		}
 	}
-	tcp, err := listenTCP(s.cfg.Host, s.cfg.Port, s.cfg.IPv6Only || s.cfg.PublicV4 == nil)
+	tcp, err := listenTCP(s.cfg.Host, s.cfg.Port, v6only)
 	if err != nil {
 		_ = udp.Close()
 		return fmt.Errorf("tcp listen: %w", err)
