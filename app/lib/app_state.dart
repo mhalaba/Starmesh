@@ -33,10 +33,11 @@ class HubRow {
 }
 
 class ChatLine {
-  ChatLine(this.from, this.text, {this.mine = false});
+  ChatLine(this.from, this.text, {this.mine = false, this.e2e = true});
   final String from;
   final String text;
   final bool mine;
+  final bool e2e;
 }
 
 class AppState extends ChangeNotifier {
@@ -99,6 +100,7 @@ class AppState extends ChangeNotifier {
             '${m['from'] ?? ''}',
             '${m['text'] ?? ''}',
             mine: m['mine'] == true,
+            e2e: m['e2e'] != false,
           );
         }).toList();
       }

@@ -68,9 +68,11 @@ Timeouts are 15–20s (Starlink is lossy and IPs move).
 ## Crypto
 
 - Identity: Ed25519 per install
-- Boxes: X25519 (NaCl box). Relays never see plaintext.
+- Chat: X25519 NaCl box per message. Hubs forward `ciphertext` only.
+- Sender `from_x` rides on the envelope so first contact opens without presence.
+- Local UI log (`--home/chat.box`) is a second secretbox — not plaintext on disk.
 - Transport: QUIC first (`starmesh/1`), TCP/TLS 1.3 fallback
-- Envelope: `id, from, to, ts, type, sig, ciphertext`
+- Envelope: `id, from, to, ts, type, sig, from_x, ciphertext`
 
 ## Become hub
 

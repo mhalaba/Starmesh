@@ -325,6 +325,10 @@ func (sp *Spoke) handleEnvelope(env *Envelope) {
 	}
 	if len(box.X25519) == 32 {
 		copy(fromX[:], box.X25519)
+	} else if len(env.FromX) == 32 {
+		copy(fromX[:], env.FromX)
+	}
+	if fromX != [32]byte{} {
 		sp.mu.Lock()
 		sp.peers[mustHex(env.From)] = peerInfo{Ed: env.From, X: fromX, Name: box.Name}
 		sp.mu.Unlock()
@@ -341,6 +345,9 @@ type chatBox struct {
 }
 
 func (sp *Spoke) tryOpen(env *Envelope, fromX [32]byte) ([]byte, error) {
+	if fromX == [32]byte{} && len(env.FromX) == 32 {
+		copy(fromX[:], env.FromX)
+	}
 	if fromX != [32]byte{} {
 		return Open(sp.id, fromX, env)
 	}

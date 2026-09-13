@@ -110,7 +110,9 @@ System-wide units: `deploy/starmesh.service` (node),
   --api 127.0.0.1:7781
 ```
 
-Chat: open `http://10.1.1.209:7780/`, pick **alice** on Czat, send.
+Chat: open `http://10.1.1.209:7780/`, pick **alice** on CZAT, send.
+Each line is a NaCl box — the hub sees ciphertext, not the text.
+The panel log is also boxed on disk (`--home/operator/chat.box`).
 Or use alice’s panel on `:7781` (loopback only in this example).
 
 **Another device on the LAN:** same `--invite` (includes lab IPv4 under

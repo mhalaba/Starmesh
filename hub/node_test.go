@@ -73,7 +73,7 @@ func TestOperatorSendPathViaAPI(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	opHome := t.TempDir()
-	op, opID, err := StartOperatorSpoke(ctx, opHome, "tas", []string{blob}, chat)
+	op, opID, chat, err := StartOperatorSpoke(ctx, opHome, "tas", []string{blob}, chat)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,8 +87,7 @@ func TestOperatorSendPathViaAPI(t *testing.T) {
 
 	api := &LocalAPI{
 		Send: func(to, text string) error {
-			chat.Add("me", text, true)
-			return op.SendToName(to, text)
+			return chat.AfterSeal("me", text, true, op.SendToName(to, text))
 		},
 		Messages: chat.Snapshot,
 		Peers:    op.PeerRows,
@@ -114,6 +113,31 @@ func TestOperatorSendPathViaAPI(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		if strings.Contains(bobLog.String(), "czesc-z-panelu") {
+			st, err := http.Get(ts.URL + "/v1/status")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(st.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			st.Body.Close()
+			if body["chat_e2e"] != true {
+				t.Fatalf("chat_e2e=%v", body["chat_e2e"])
+			}
+			msgs, _ := body["messages"].([]any)
+			if len(msgs) == 0 {
+				t.Fatal("expected sealed UI line")
+			}
+			row := msgs[0].(map[string]any)
+			if row["e2e"] != true || row["text"] != "czesc-z-panelu" {
+				t.Fatalf("msg=%v", row)
+			}
+			for _, dump := range h.Dumps() {
+				if strings.Contains(string(dump), "czesc-z-panelu") {
+					t.Fatal("hub wire dump contained plaintext")
+				}
+			}
 			return
 		}
 		time.Sleep(40 * time.Millisecond)
