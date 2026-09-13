@@ -114,7 +114,8 @@ function renderDash(s) {
   if (p.behind_cgnat) badges.push(["warn", t("cgnat")]);
   if (p.dev) badges.push(["warn", "--dev"]);
   document.getElementById("badges").innerHTML = badges.map(([c, l]) => `<span class="badge ${c}">${l}</span>`).join("");
-  document.getElementById("capHint").textContent = p.reason || "";
+  const hint = document.getElementById("capHint");
+  if (hint) hint.textContent = p.reason || "";
   const hubs = s.hubs || [];
   document.getElementById("hubList").innerHTML = hubs.length
     ? hubs.map((h) => `<div><strong>${h.name || h.fingerprint || "?"}</strong>
@@ -135,7 +136,8 @@ function renderChat(s) {
   const lines = s.messages || [];
   log.innerHTML = lines.map((m) => {
     const cls = m.mine ? "bubble mine" : (m.from === "system" ? "bubble sys" : "bubble");
-    return `<div class="${cls}">${m.mine ? "" : `<strong>${m.from}:</strong> `}${esc(m.text)}</div>`;
+    const who = m.mine ? "1P" : (m.from || "?");
+    return `<div class="${cls}"><b>${esc(who)}</b> ${esc(m.text)}</div>`;
   }).join("");
   log.scrollTop = log.scrollHeight;
 }
@@ -188,12 +190,16 @@ async function refresh() {
   }
 }
 
+function showPage(id) {
+  document.querySelectorAll(".dock button").forEach((x) => x.classList.toggle("on", x.dataset.page === id));
+  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + id));
+}
+
 document.querySelectorAll(".dock button").forEach((b) => {
-  b.onclick = () => {
-    document.querySelectorAll(".dock button").forEach((x) => x.classList.toggle("on", x === b));
-    document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + b.dataset.page));
-  };
+  b.onclick = () => showPage(b.dataset.page);
 });
+const startPage = new URLSearchParams(location.search).get("page");
+if (startPage) showPage(startPage);
 
 document.getElementById("langBtn").onclick = () => {
   lang = lang === "pl" ? "en" : "pl";

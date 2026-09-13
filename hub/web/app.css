@@ -36,7 +36,6 @@ html, body {
   min-height: 100%;
   background: var(--sky);
   color: var(--black);
-  image-rendering: pixelated;
 }
 body { min-height: 100dvh; overflow-x: hidden; }
 button { font: inherit; cursor: pointer; }
@@ -48,6 +47,7 @@ button { font: inherit; cursor: pointer; }
   z-index: 0;
   background: var(--sky);
   pointer-events: none;
+  image-rendering: pixelated;
 }
 
 /* Pixel clouds — stacked boxes, SMB1 style */
@@ -72,25 +72,45 @@ button { font: inherit; cursor: pointer; }
 .hill {
   position: absolute;
   bottom: 72px;
-  width: 0;
-  height: 0;
-  border-left: 56px solid transparent;
-  border-right: 56px solid transparent;
-  border-bottom: 48px solid var(--hill-d);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.hill.back { left: 6%; border-left-width: 80px; border-right-width: 80px; border-bottom-width: 72px; border-bottom-color: var(--hill); }
-.hill.front { right: 18%; }
+.hill i {
+  display: block;
+  height: 14px;
+  background: var(--hill);
+  box-shadow: inset 4px 0 0 var(--hill-d);
+}
+.hill.back { left: 4%; }
+.hill.back i:nth-child(1) { width: 28px; }
+.hill.back i:nth-child(2) { width: 56px; }
+.hill.back i:nth-child(3) { width: 84px; }
+.hill.back i:nth-child(4) { width: 112px; }
+.hill.front { right: 22%; }
+.hill.front i:nth-child(1) { width: 24px; background: var(--hill-d); }
+.hill.front i:nth-child(2) { width: 48px; }
+.hill.front i:nth-child(3) { width: 72px; }
 
 .bush {
   position: absolute;
   bottom: 72px;
-  width: 20px;
-  height: 12px;
-  background: var(--pipe);
-  box-shadow: 10px 0 0 var(--pipe), 20px 0 0 var(--pipe), 10px -8px 0 var(--pipe);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.bush.left { left: 28%; }
-.bush.mid { left: 58%; }
+.bush i {
+  display: block;
+  height: 10px;
+  background: var(--pipe);
+}
+.bush.left { left: 30%; }
+.bush.left i:nth-child(1) { width: 16px; }
+.bush.left i:nth-child(2) { width: 32px; }
+.bush.left i:nth-child(3) { width: 48px; }
+.bush.mid { left: 56%; }
+.bush.mid i:nth-child(1) { width: 14px; }
+.bush.mid i:nth-child(2) { width: 28px; }
 
 .pipe-deco {
   position: absolute;
@@ -178,10 +198,10 @@ button { font: inherit; cursor: pointer; }
 .title-plate h1 {
   margin: 0;
   font-family: "Press Start", monospace;
-  font-size: 14px;
+  font-size: 16px;
   color: #fc1c18;
-  letter-spacing: 1px;
-  text-shadow: 3px 3px 0 #880000;
+  letter-spacing: 0;
+  text-shadow: 2px 2px 0 #880000;
 }
 .coin {
   width: 12px;
@@ -192,10 +212,10 @@ button { font: inherit; cursor: pointer; }
 }
 
 .ticker {
-  font-family: "Press Start", monospace;
-  font-size: 8px;
-  line-height: 1.7;
-  padding: 8px 10px;
+  font-family: VT323, monospace;
+  font-size: 20px;
+  line-height: 1.2;
+  padding: 6px 10px;
   text-transform: uppercase;
   border-bottom: 4px solid var(--black);
 }
@@ -208,11 +228,11 @@ main { padding: 12px 10px 8px; }
 
 .stage-tag, .gameover {
   font-family: "Press Start", monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-  margin: 2px 0 12px;
+  font-size: 16px;
+  letter-spacing: 0;
+  margin: 6px 0 14px;
   color: #fff;
-  text-shadow: 3px 3px 0 var(--black);
+  text-shadow: 2px 2px 0 var(--black);
 }
 .gameover {
   text-align: center;
@@ -289,10 +309,10 @@ main { padding: 12px 10px 8px; }
 
 .badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .badge {
-  font-family: "Press Start", monospace;
-  font-size: 7px;
-  line-height: 1.5;
-  padding: 5px 6px;
+  font-family: VT323, monospace;
+  font-size: 16px;
+  line-height: 1.1;
+  padding: 3px 6px;
   background: #3c2c10;
   color: var(--gold);
   border: 3px solid var(--black);
@@ -308,13 +328,13 @@ main { padding: 12px 10px 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .chips button {
-  font-family: "Press Start", monospace;
-  font-size: 8px;
+  font-family: VT323, monospace;
+  font-size: 18px;
   background: var(--gold);
   color: var(--black);
   border: 3px solid var(--black);
   box-shadow: 3px 3px 0 var(--black);
-  padding: 7px 8px;
+  padding: 4px 8px;
 }
 .chips button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 
@@ -431,14 +451,15 @@ textarea { min-height: 5rem; }
   background: var(--black);
   color: var(--gold);
   border: 3px solid var(--black);
-  font-family: "Press Start", monospace;
-  font-size: 7px;
-  line-height: 1.25;
-  padding: 6px 1px 5px;
+  font-family: VT323, monospace;
+  font-size: 16px;
+  letter-spacing: 1px;
+  line-height: 1.1;
+  padding: 6px 1px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 .dock button.on {
   background: var(--gold);
