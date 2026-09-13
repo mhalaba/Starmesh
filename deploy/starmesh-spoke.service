@@ -1,0 +1,19 @@
+[Unit]
+Description=Starmesh spoke (headless, separate --home from the hub)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tas
+Group=tas
+EnvironmentFile=-/etc/starmesh/starmesh.env
+Environment=STARMESH_HOME=/var/lib/starmesh/spoke
+ExecStart=/usr/local/bin/starmesh spoke --headless --name alice --home /var/lib/starmesh/spoke --invite ${STARMESH_INVITE} --api 127.0.0.1:7781
+Restart=on-failure
+RestartSec=5
+StandardInput=null
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

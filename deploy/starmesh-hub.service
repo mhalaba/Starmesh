@@ -1,5 +1,5 @@
 [Unit]
-Description=Starmesh node — hub + operator chat + web panel
+Description=Starmesh hub (mesh listener only; chat via --operator)
 After=network-online.target
 Wants=network-online.target
 
@@ -9,13 +9,12 @@ User=tas
 Group=tas
 EnvironmentFile=-/etc/starmesh/starmesh.env
 Environment=STARMESH_HOME=/var/lib/starmesh/hub
-ExecStart=/usr/local/bin/starmesh node --dev --name tasai-lab --home /var/lib/starmesh/hub --api 0.0.0.0:7780
+ExecStart=/usr/local/bin/starmesh hub --dev --name tasai-lab --home /var/lib/starmesh/hub --api 127.0.0.1:7780
 Restart=on-failure
 RestartSec=5
 StandardInput=null
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 LimitNOFILE=65535
-LimitMEMLOCK=infinity
 
 [Install]
 WantedBy=multi-user.target

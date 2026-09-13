@@ -25,6 +25,7 @@ type ServerConfig struct {
 	CloudSeed bool
 	Dev       bool
 	Capture   bool
+	LabIPv4   net.IP   // --dev LAN locator only; never a claimed public IPv4
 	Peers     []string // invite blobs of other hubs
 	Logger    *slog.Logger
 }
@@ -161,6 +162,9 @@ func (s *Server) buildInvite() *invite.Invite {
 	}
 	if s.cfg.ClaimIPv4 && s.cfg.PublicV4 != nil {
 		inv.IPv4 = s.cfg.PublicV4
+	} else if s.cfg.Dev && s.cfg.LabIPv4 != nil {
+		// Lab-only: RFC1918 so another host on the LAN can dial without global IPv6.
+		inv.IPv4 = s.cfg.LabIPv4
 	}
 	return inv
 }
