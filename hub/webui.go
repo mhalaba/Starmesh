@@ -38,7 +38,7 @@ func qrSVG(payload string) (string, error) {
 	for y := 0; y < n; y++ {
 		for x := 0; x < n; x++ {
 			if code.Black(x, y) {
-				fmt.Fprintf(&b, `<rect x="%d" y="%d" width="%d" height="%d" fill="#0b0e14"/>`, (x+1)*cell, (y+1)*cell, cell, cell)
+				fmt.Fprintf(&b, `<rect x="%d" y="%d" width="%d" height="%d" fill="#000"/>`, (x+1)*cell, (y+1)*cell, cell, cell)
 			}
 		}
 	}

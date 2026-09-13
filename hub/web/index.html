@@ -3,117 +3,139 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0e14">
-  <title>Starmesh</title>
+  <meta name="theme-color" content="#5c94fc">
+  <title>STARMESH</title>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <span class="logo" aria-hidden="true"></span>
-      <div>
-        <strong>Starmesh</strong>
-        <small id="roleLine">—</small>
-      </div>
+  <div class="world" aria-hidden="true">
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="hill back"></div>
+    <div class="hill front"></div>
+    <div class="bush left"></div>
+    <div class="bush mid"></div>
+    <div class="pipe-deco">
+      <span class="lip"></span>
     </div>
-    <div class="top-actions">
-      <button type="button" id="langBtn" class="ghost">EN</button>
-    </div>
-  </header>
-  <div id="banner" class="banner wait">…</div>
+    <div class="ground"></div>
+  </div>
 
-  <main id="pages">
-    <section id="page-dash" class="page active">
-      <h1 data-i18n="dash">Pulpit</h1>
-      <div class="cards">
-        <article class="card">
-          <h2 data-i18n="identity">Tożsamość</h2>
-          <dl>
-            <div><dt data-i18n="name">Nazwa</dt><dd id="dName">—</dd></div>
-            <div><dt data-i18n="fp">Odcisk</dt><dd class="mono" id="dFp">—</dd></div>
-            <div><dt data-i18n="short">Kod 10</dt><dd class="mono" id="dShort">—</dd></div>
-            <div><dt data-i18n="uptime">Czas pracy</dt><dd id="dUp">—</dd></div>
+  <div class="cabinet">
+    <header class="hud">
+      <div class="hud-col">
+        <span class="hud-lab">1UP</span>
+        <strong id="dName">---</strong>
+      </div>
+      <div class="hud-col">
+        <span class="hud-lab">WORLD</span>
+        <strong id="roleLine">---</strong>
+      </div>
+      <div class="hud-col">
+        <span class="hud-lab">TIME</span>
+        <strong id="dUp">000</strong>
+      </div>
+      <button type="button" id="langBtn" class="btn-mini">EN</button>
+    </header>
+
+    <div class="title-plate">
+      <div class="coin" aria-hidden="true"></div>
+      <h1>STARMESH</h1>
+      <div class="coin" aria-hidden="true"></div>
+    </div>
+    <div id="banner" class="ticker wait">...</div>
+
+    <main id="pages">
+      <section id="page-dash" class="page active">
+        <p class="stage-tag" data-i18n="dash">MAPA</p>
+        <article class="item-box">
+          <header><span class="q">?</span><span data-i18n="identity">GRACZ</span></header>
+          <dl class="stats">
+            <div><dt data-i18n="fp">ODCISK</dt><dd id="dFp">---</dd></div>
+            <div><dt data-i18n="short">KOD</dt><dd id="dShort">---</dd></div>
           </dl>
         </article>
-        <article class="card">
-          <h2 data-i18n="cap">Zdolność</h2>
+        <article class="item-box">
+          <header><span class="q">?</span><span data-i18n="cap">POWER</span></header>
           <div id="badges" class="badges"></div>
           <p id="capHint" class="hint"></p>
         </article>
-      </div>
-      <article class="card">
-        <h2 data-i18n="hubs">Huby i sesje</h2>
-        <div id="hubList" class="list"></div>
-      </article>
-    </section>
+        <article class="item-box">
+          <header><span class="q">?</span><span data-i18n="hubs">STAGE</span></header>
+          <div id="hubList" class="list"></div>
+        </article>
+      </section>
 
-    <section id="page-chat" class="page">
-      <h1 data-i18n="chat">Czat</h1>
-      <div id="peerChips" class="chips"></div>
-      <div id="chatLog" class="chat"></div>
-      <p id="chatErr" class="err" hidden></p>
-      <form id="chatForm" class="composer">
-        <input id="chatTo" autocomplete="off" data-i18n-ph="toPh" placeholder="Do (nazwa lub odcisk)">
-        <div class="row">
-          <input id="chatText" autocomplete="off" data-i18n-ph="msgPh" placeholder="Wiadomość (E2E)">
-          <button type="submit" data-i18n="send">Wyślij</button>
+      <section id="page-chat" class="page">
+        <p class="stage-tag" data-i18n="chat">CZAT</p>
+        <div id="peerChips" class="chips"></div>
+        <div id="chatLog" class="nes-box"></div>
+        <p id="chatErr" class="err" hidden></p>
+        <form id="chatForm" class="composer">
+          <input id="chatTo" autocomplete="off" data-i18n-ph="toPh" placeholder="DO KOGO">
+          <div class="row">
+            <input id="chatText" autocomplete="off" data-i18n-ph="msgPh" placeholder="WIADOMOSC">
+            <button type="submit" class="pad-a" data-i18n="send">A</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="page-invite" class="page">
+        <p class="stage-tag" data-i18n="invite">KARTA</p>
+        <p class="lede" data-i18n="inviteHelp">POKAZ TEN KOD NA LAN. TO NIE JEST SEED Z CHMURY.</p>
+        <div class="qr-wrap">
+          <img id="qrImg" alt="QR" hidden>
+          <p id="qrEmpty" class="hint" data-i18n="noInvite">BRAK KARTY — TO NIE HUB.</p>
         </div>
-      </form>
-    </section>
-
-    <section id="page-invite" class="page">
-      <h1 data-i18n="invite">Zaproszenie</h1>
-      <p class="lede" data-i18n="inviteHelp">Pokaż ten QR telefonowi w LAN. To nie jest adres seeda w chmurze.</p>
-      <div class="qr-wrap">
-        <img id="qrImg" alt="QR" hidden>
-        <p id="qrEmpty" class="hint" data-i18n="noInvite">Brak zaproszenia — ten proces nie jest hubem.</p>
-      </div>
-      <p class="short mono" id="invShort">—</p>
-      <label class="blob">
-        <span>starmesh1:</span>
-        <textarea id="invBlob" readonly rows="3"></textarea>
-      </label>
-      <div class="row">
-        <button type="button" id="copyBlob" data-i18n="copy">Kopiuj blob</button>
-        <button type="button" id="copyShort" class="ghost" data-i18n="copyShort">Kopiuj kod</button>
-      </div>
-    </section>
-
-    <section id="page-join" class="page">
-      <h1 data-i18n="join">Dołącz</h1>
-      <p class="lede" data-i18n="joinHelp">Wklej zaproszenie, kod 10-znakowy albo IPv6. Daemon wybiera hub — seed na końcu.</p>
-      <form id="joinForm">
-        <textarea id="joinRaw" rows="4" data-i18n-ph="joinPh" placeholder="starmesh1:… albo IPv6"></textarea>
-        <button type="submit" data-i18n="dial">Wybierz / dodaj</button>
-      </form>
-      <p id="joinMsg" class="hint"></p>
-    </section>
-
-    <section id="page-net" class="page">
-      <h1 data-i18n="net">Sieć</h1>
-      <article class="card">
-        <h2 data-i18n="probe">Sonda</h2>
-        <dl id="probeDL"></dl>
-        <p id="raAdvice" class="hint"></p>
-      </article>
-      <article class="card">
-        <h2 data-i18n="svc">Usługa</h2>
+        <p class="short" id="invShort">---</p>
+        <label class="blob">
+          <span>starmesh1:</span>
+          <textarea id="invBlob" readonly rows="3"></textarea>
+        </label>
         <div class="row">
-          <button type="button" id="btnBecome" data-i18n="become">Zostań hubem</button>
-          <button type="button" id="btnStop" class="ghost" data-i18n="stop">Przestań być hubem</button>
+          <button type="button" id="copyBlob" class="pad-a" data-i18n="copy">KOPIUJ</button>
+          <button type="button" id="copyShort" class="pad-b" data-i18n="copyShort">KOD</button>
         </div>
-        <p id="svcMsg" class="hint"></p>
-      </article>
-    </section>
-  </main>
+      </section>
 
-  <nav class="tabs">
-    <button type="button" data-page="dash" class="on" data-i18n="dash">Pulpit</button>
-    <button type="button" data-page="chat" data-i18n="chat">Czat</button>
-    <button type="button" data-page="invite" data-i18n="invite">QR</button>
-    <button type="button" data-page="join" data-i18n="join">Dołącz</button>
-    <button type="button" data-page="net" data-i18n="net">Sieć</button>
-  </nav>
+      <section id="page-join" class="page">
+        <p class="gameover" data-i18n="join">CONTINUE?</p>
+        <p class="blink" data-i18n="press">NACISNIJ START</p>
+        <p class="lede" data-i18n="joinHelp">WKLEJ BLOB, KOD 10 ALBO IPv6. SEED NA KONCU.</p>
+        <form id="joinForm">
+          <textarea id="joinRaw" rows="4" data-i18n-ph="joinPh" placeholder="starmesh1:..."></textarea>
+          <button type="submit" class="pad-a" data-i18n="dial">START</button>
+        </form>
+        <p id="joinMsg" class="hint"></p>
+      </section>
+
+      <section id="page-net" class="page">
+        <p class="stage-tag" data-i18n="net">DIAG</p>
+        <article class="item-box">
+          <header><span class="q">?</span><span data-i18n="probe">SONDA</span></header>
+          <dl class="stats" id="probeDL"></dl>
+          <p id="raAdvice" class="hint"></p>
+        </article>
+        <article class="item-box">
+          <header><span class="q">?</span><span data-i18n="svc">SELECT</span></header>
+          <div class="row">
+            <button type="button" id="btnBecome" class="pad-a" data-i18n="become">HUB</button>
+            <button type="button" id="btnStop" class="pad-b" data-i18n="stop">STOP</button>
+          </div>
+          <p id="svcMsg" class="hint"></p>
+        </article>
+      </section>
+    </main>
+
+    <nav class="dock">
+      <button type="button" data-page="dash" class="on"><i class="ico brick"></i><span data-i18n="dash">MAPA</span></button>
+      <button type="button" data-page="chat"><i class="ico mushroom"></i><span data-i18n="chat">CZAT</span></button>
+      <button type="button" data-page="invite"><i class="ico qblock"></i><span data-i18n="invite">QR</span></button>
+      <button type="button" data-page="join"><i class="ico pipe"></i><span data-i18n="join">JOIN</span></button>
+      <button type="button" data-page="net"><i class="ico star"></i><span data-i18n="net">NET</span></button>
+    </nav>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

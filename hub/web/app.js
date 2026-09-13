@@ -1,50 +1,50 @@
 const I18N = {
   pl: {
-    dash: "Pulpit", chat: "Czat", invite: "QR", join: "Dołącz", net: "Sieć",
-    identity: "Tożsamość", name: "Nazwa", fp: "Odcisk", short: "Kod 10",
-    uptime: "Czas pracy", cap: "Zdolność", hubs: "Huby i sesje",
-    inviteHelp: "Pokaż ten QR telefonowi w LAN. To nie jest adres seeda w chmurze.",
-    noInvite: "Brak zaproszenia — ten proces nie jest hubem.",
-    copy: "Kopiuj blob", copyShort: "Kopiuj kod",
-    joinHelp: "Wklej zaproszenie, kod 10-znakowy albo IPv6. Daemon wybiera hub — seed na końcu.",
-    dial: "Wybierz / dodaj", send: "Wyślij",
-    toPh: "Do (nazwa lub odcisk)", msgPh: "Wiadomość (E2E)",
-    joinPh: "starmesh1:… albo IPv6",
-    probe: "Sonda", svc: "Usługa", become: "Zostań hubem", stop: "Przestań być hubem",
-    noHub: "Brak huba — w kolejce",
-    peersEmpty: "Brak peerów. Poczekaj na obecność albo dołącz drugiego spoke.",
-    unknownPeer: "Nieznany peer. Wybierz kogoś z listy albo poczekaj na presence.",
-    copied: "Skopiowano",
-    ipv6Real: "Globalne IPv6",
-    ipv6Lab: "Lab --dev (brak globalnego IPv6)",
-    ipv4Pub: "Publiczne IPv4",
-    ipv4None: "IPv4 nieogłaszane",
+    dash: "MAPA", chat: "CZAT", invite: "KARTA", join: "CONT", net: "DIAG",
+    identity: "GRACZ", name: "IMIE", fp: "ODCISK", short: "KOD",
+    uptime: "CZAS", cap: "POWER", hubs: "STAGE",
+    inviteHelp: "POKAZ TEN KOD NA LAN. TO NIE JEST SEED Z CHMURY.",
+    noInvite: "BRAK KARTY — TO NIE HUB.",
+    copy: "KOPIUJ", copyShort: "KOD",
+    joinHelp: "WKLEJ BLOB, KOD 10 ALBO IPv6. SEED NA KONCU.",
+    dial: "START", send: "A", press: "NACISNIJ START",
+    toPh: "DO KOGO", msgPh: "WIADOMOSC",
+    joinPh: "starmesh1:… ALBO IPv6",
+    probe: "SONDA", svc: "SELECT", become: "HUB", stop: "STOP",
+    noHub: "BRAK HUBA — KOLEJKA",
+    peersEmpty: "NIKT NA MAPIE. WPISZ NICK ALBO CZEKAJ.",
+    unknownPeer: "NIE MA TAKIEGO. WEZ Z LISTY ALBO CZEKAJ.",
+    copied: "OK",
+    ipv6Real: "IPv6 GLOBAL",
+    ipv6Lab: "LAB --DEV / BRAK IPv6",
+    ipv4Pub: "IPv4 PUBLIC",
+    ipv4None: "IPv4 OFF",
     udpOk: "UDP :4433 OK",
-    udpNo: "UDP :4433 zajęty/błąd",
+    udpNo: "UDP :4433 FAIL",
     cgnat: "CGNAT",
   },
   en: {
-    dash: "Dashboard", chat: "Chat", invite: "QR", join: "Join", net: "Net",
-    identity: "Identity", name: "Name", fp: "Fingerprint", short: "Short",
-    uptime: "Uptime", cap: "Capability", hubs: "Hubs & sessions",
-    inviteHelp: "Show this QR to a phone on the LAN. This is not the cloud seed host.",
-    noInvite: "No invite — this process is not a hub.",
-    copy: "Copy blob", copyShort: "Copy short",
-    joinHelp: "Paste a starmesh1: blob, 10-char code, or IPv6. The daemon dials; seed is last.",
-    dial: "Dial / add", send: "Send",
-    toPh: "To (name or fingerprint)", msgPh: "Message (E2E)",
-    joinPh: "starmesh1:… or IPv6",
-    probe: "Probe", svc: "Service", become: "Become hub", stop: "Stop being hub",
-    noHub: "No hub — queued",
-    peersEmpty: "No peers yet. Wait for presence or join a second spoke.",
-    unknownPeer: "Unknown peer. Pick someone from the list or wait for presence.",
-    copied: "Copied",
-    ipv6Real: "Global IPv6",
-    ipv6Lab: "Lab --dev (no global IPv6)",
-    ipv4Pub: "Public IPv4",
-    ipv4None: "IPv4 not advertised",
+    dash: "MAP", chat: "CHAT", invite: "CARD", join: "CONT", net: "DIAG",
+    identity: "1P", name: "NAME", fp: "PRINT", short: "CODE",
+    uptime: "TIME", cap: "POWER", hubs: "STAGE",
+    inviteHelp: "SHOW THIS CODE ON THE LAN. NOT THE CLOUD SEED.",
+    noInvite: "NO CARD — NOT A HUB.",
+    copy: "COPY", copyShort: "CODE",
+    joinHelp: "PASTE BLOB, 10-CHAR CODE, OR IPv6. SEED LAST.",
+    dial: "START", send: "A", press: "PRESS START",
+    toPh: "TO WHOM", msgPh: "MESSAGE",
+    joinPh: "starmesh1:… OR IPv6",
+    probe: "PROBE", svc: "SELECT", become: "HUB", stop: "STOP",
+    noHub: "NO HUB — QUEUE",
+    peersEmpty: "NOBODY ON THE MAP. TYPE A NICK OR WAIT.",
+    unknownPeer: "UNKNOWN. PICK FROM THE LIST OR WAIT.",
+    copied: "OK",
+    ipv6Real: "IPv6 GLOBAL",
+    ipv6Lab: "LAB --DEV / NO IPv6",
+    ipv4Pub: "IPv4 PUBLIC",
+    ipv4None: "IPv4 OFF",
     udpOk: "UDP :4433 OK",
-    udpNo: "UDP :4433 busy/error",
+    udpNo: "UDP :4433 FAIL",
     cgnat: "CGNAT",
   },
 };
@@ -74,10 +74,9 @@ function applyI18n() {
 
 function fmtUp(s) {
   s = Number(s) || 0;
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  if (h) return `${h}h ${m}m`;
-  if (m) return `${m}m ${sec}s`;
-  return `${sec}s`;
+  const m = Math.floor(s / 60);
+  if (m > 999) return String(m);
+  return String(m).padStart(3, "0");
 }
 
 async function api(path, opt) {
@@ -93,7 +92,8 @@ function renderBanner(s) {
   const el = document.getElementById("banner");
   const text = s.banner || t("noHub");
   el.textContent = text;
-  el.className = "banner " + (String(text).toLowerCase().includes("no hub") ? "wait" : "ok");
+  const waiting = /no hub|brak hub|queued|kolejk/i.test(String(text));
+  el.className = "ticker " + (waiting ? "wait" : "ok");
 }
 
 function renderDash(s) {
@@ -184,13 +184,13 @@ async function refresh() {
     renderNet(state);
   } catch (e) {
     document.getElementById("banner").textContent = "API offline";
-    document.getElementById("banner").className = "banner wait";
+    document.getElementById("banner").className = "ticker wait";
   }
 }
 
-document.querySelectorAll(".tabs button").forEach((b) => {
+document.querySelectorAll(".dock button").forEach((b) => {
   b.onclick = () => {
-    document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+    document.querySelectorAll(".dock button").forEach((x) => x.classList.toggle("on", x === b));
     document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + b.dataset.page));
   };
 });
