@@ -53,21 +53,22 @@ button { font: inherit; cursor: pointer; }
 /* Pixel clouds — stacked boxes, SMB1 style */
 .cloud {
   position: absolute;
+  width: 24px;
+  height: 12px;
   background: var(--nes-w);
   box-shadow:
-    8px 0 0 var(--nes-w),
     16px 0 0 var(--nes-w),
-    24px 0 0 var(--nes-w),
-    4px -8px 0 var(--nes-w),
-    12px -8px 0 var(--nes-w),
-    20px -8px 0 var(--nes-w),
-    8px -16px 0 var(--nes-w);
-  width: 16px;
-  height: 8px;
+    32px 0 0 var(--nes-w),
+    48px 0 0 var(--nes-w),
+    8px -12px 0 var(--nes-w),
+    24px -12px 0 var(--nes-w),
+    40px -12px 0 var(--nes-w),
+    16px -24px 0 var(--nes-w),
+    32px -24px 0 var(--nes-w);
 }
-.cloud.c1 { top: 72px; left: 8%; }
-.cloud.c2 { top: 112px; right: 12%; transform: scale(1.25); }
-.cloud.c3 { top: 168px; left: 42%; transform: scale(0.85); }
+.cloud.c1 { top: 92px; left: 6%; }
+.cloud.c2 { top: 128px; right: 10%; transform: scale(1.15); }
+.cloud.c3 { top: 200px; left: 40%; transform: scale(0.8); }
 
 .hill {
   position: absolute;
@@ -176,8 +177,15 @@ button { font: inherit; cursor: pointer; }
   line-height: 1.55;
   text-transform: uppercase;
 }
-.hud-lab { display: block; color: var(--gold); margin-bottom: 4px; }
-.hud-col strong { font-size: 9px; word-break: break-all; color: #fcfcfc; }
+.hud-lab { display: block; color: var(--gold); margin-bottom: 2px; }
+.hud-col strong {
+  font-family: VT323, monospace;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  word-break: break-all;
+  color: #fcfcfc;
+}
 .btn-mini {
   font-family: "Press Start", monospace;
   font-size: 8px;
