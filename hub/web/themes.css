@@ -23,6 +23,9 @@
 
 body[data-theme="dune"] .deco.dune,
 body[data-theme="witcher"] .deco.witcher { display: block; }
+.horizon { height: 0; }
+body[data-theme="dune"] .horizon,
+body[data-theme="witcher"] .horizon { height: 76px; }
 body[data-theme="dune"] .deco.mario,
 body[data-theme="witcher"] .deco.mario { display: none; }
 
@@ -58,11 +61,11 @@ body[data-theme="dune"] .world {
 }
 body[data-theme="dune"] .sun {
   position: absolute;
-  top: 56px;
+  top: 198px;
   left: 50%;
-  width: 48px;
-  height: 48px;
-  margin-left: -24px;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
   background: #fcbc18;
   box-shadow: 0 0 0 6px #c47828;
 }
@@ -71,8 +74,8 @@ body[data-theme="dune"] .moon {
   background: #e8d2a0;
   border: 3px solid #0a0804;
 }
-body[data-theme="dune"] .moon.m1 { top: 72px; left: 12%; width: 14px; height: 14px; }
-body[data-theme="dune"] .moon.m2 { top: 88px; right: 18%; width: 10px; height: 10px; }
+body[data-theme="dune"] .moon.m1 { top: 188px; left: 10%; width: 16px; height: 16px; }
+body[data-theme="dune"] .moon.m2 { top: 204px; right: 14%; width: 11px; height: 11px; }
 body[data-theme="dune"] .ridge {
   position: absolute;
   bottom: 72px;
@@ -271,8 +274,8 @@ body[data-theme="witcher"] .world {
 }
 body[data-theme="witcher"] .deco.witcher .moon {
   position: absolute;
-  top: 56px;
-  right: 14%;
+  top: 188px;
+  right: 12%;
   width: 36px;
   height: 36px;
   background: #e4d2a8;
