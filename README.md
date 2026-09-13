@@ -29,9 +29,10 @@ See [docs/starlink.md](docs/starlink.md).
 |------|------|
 | `/invite` | Encode/decode library (Go + Dart). No DNS names. |
 | `/hub` | Same Go binary for a Starlink hub and a cloud seed. CLI spoke included. |
-| `/app` | Flutter UI (Network, chat, Become hub, full-screen QR). |
-| `/deploy` | Linux mini-PC behind Starlink bypass. |
+| `/app` | Optional Flutter UI (same `/v1` API as the web panel). |
+| `/deploy` | systemd units (Pi / mini-PC). Web panel is embedded in the Go binary. |
 | `/docs/starlink.md` | CGNAT vs IPv6 vs Priority. |
+| `/docs/pi.md` | Raspberry Pi 5 Starlink lab — **start here for TASAI**. |
 
 ## Quick lab (no dish)
 
@@ -77,9 +78,27 @@ The probe checks: global IPv6 on this host, UDP :4433 bind, public IPv4
 only if WAN IP equals the observed IPv4. `100.64/10` and RFC1918 are never
 advertised as reachable IPv4.
 
+## Raspberry Pi 5 (Starlink lab)
+
+Operator UI is the **web panel served by the daemon** — no Flutter/Python
+on the Pi. Exact commands: [docs/pi.md](docs/pi.md).
+
+```bash
+GOOS=linux GOARCH=arm64 go build -o dist/starmesh-linux-arm64 ./hub/cmd/starmesh
+# on the Pi (no global IPv6 yet — keep --dev)
+starmesh node --dev --name "tasai-lab" --home ~/.starmesh/hub --api 0.0.0.0:7780
+# phone/laptop on 10.1.1.0/24:
+#   http://10.1.1.209:7780/
+```
+
+`node` = hub + local chat identity (`--home/operator`) + headless wait
+(no stdin). Real mesh hub still needs global IPv6; see [docs/starlink.md](docs/starlink.md).
+Cloud seed is last in the dial order, never a web host.
+
 ## Flutter
 
-The app in `/app` is **UI only** (chat, hubs, QR). It is not the mesh.
+The Pi operator UI is the Go web panel ([docs/pi.md](docs/pi.md)).
+The app in `/app` is an optional Flutter client (chat, hubs, QR). It is not the mesh.
 It talks to the local Go daemon on `http://127.0.0.1:7780`
 (`hub --api` or `spoke --api`). Hub and seed dialing stay in Go.
 

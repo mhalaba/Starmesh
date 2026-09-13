@@ -1,0 +1,17 @@
+[Unit]
+Description=Starmesh node (hub + web panel)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/starmesh/starmesh.env
+ExecStart=%h/bin/starmesh node --dev --name ${STARMESH_NAME} --home %h/.starmesh/hub --api ${STARMESH_API}
+Restart=on-failure
+RestartSec=5
+# No stdin. Headless is automatic when the unit has StandardInput=null.
+StandardInput=null
+LimitNOFILE=65535
+
+[Install]
+WantedBy=default.target

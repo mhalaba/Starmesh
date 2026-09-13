@@ -50,17 +50,26 @@ See `radvd.conf` in this directory.
 ## 4. Install the binary
 
 ```bash
+# Raspberry Pi 5 (arm64) or amd64 mini-PC
 go build -o /usr/local/bin/starmesh ./hub/cmd/starmesh
+# cross: GOOS=linux GOARCH=arm64 go build -o /usr/local/bin/starmesh ./hub/cmd/starmesh
+
 install -m 644 deploy/starmesh.service /etc/systemd/system/starmesh.service
-# edit User= and --name
+# edit User=, --name, --dev (required until global IPv6 exists)
 systemctl daemon-reload
 systemctl enable --now starmesh
 journalctl -u starmesh -f
 ```
 
-The unit prints a QR and a 10-char code on stdout (captured by
-journald). `starmesh become-hub` is the same binary; it refuses if this
-host has no global IPv6.
+The unit is **headless** (`StandardInput=null`). It serves the operator
+web panel on `--api` (default node bind `0.0.0.0:7780`):
+
+`http://10.1.1.209:7780/`
+
+`starmesh become-hub` / `node` without `--dev` refuses if this host has
+no global IPv6. Lab dual-process: `starmesh-hub.service` +
+`starmesh-spoke.service` with **separate** `--home`. Pi walkthrough:
+[docs/pi.md](../docs/pi.md).
 
 ## 5. Cloud seed (optional, last resort)
 

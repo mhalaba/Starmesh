@@ -1,5 +1,9 @@
 # Flutter UI (chat, hubs, QR)
 
+On a Raspberry Pi the **embedded web panel** is the operator UI
+(`starmesh node --api 0.0.0.0:7780`). See [pi.md](pi.md). Flutter is
+optional and is **not** required on the Pi.
+
 The Flutter app in `/app` is **UI only**. It is not the mesh. It never
 dials QUIC/TLS and it is not a web host.
 
@@ -123,4 +127,6 @@ Timeouts are 15–20s. Starlink is lossy and prefixes move.
 | POST | `/v1/become-hub` | capability probe / already-hub |
 | POST | `/v1/stop-hub` | stop the local hub |
 
-The listener must stay on loopback.
+Loopback (`127.0.0.1:7780`) is the default for Flutter on the same host.
+LAN bind (`0.0.0.0:7780`) is for the Pi web panel; use `--api-token` if
+the LAN is not trusted. QUIC mesh port :4433 is separate.
